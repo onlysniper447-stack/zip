@@ -2,7 +2,7 @@
 
 Hybrid financial super-app. Payments feel like Cash App. Yield and credit sit on Creditcoin. Users never see gas, hex, or slippage.
 
-**Live:** [https://zip-onlysniper447-9066.vercel.app](https://zip-onlysniper447-9066.vercel.app)  
+**Live:** [https://zip-live.vercel.app](https://zip-live.vercel.app)  
 **Source:** [https://github.com/onlysniper447-stack/zip](https://github.com/onlysniper447-stack/zip)
 
 ## What this slice includes
