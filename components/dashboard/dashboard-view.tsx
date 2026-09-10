@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Bell,
   Eye,
   EyeOff,
   Landmark,
@@ -15,11 +14,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { StateBanner } from "@/components/banners/state-banner";
-import { ZipMark } from "@/components/brand/zip-mark";
 import { DualValue } from "@/components/money/dual-value";
 import { ReceiveDrawer } from "@/components/receive/receive-drawer";
+import { AppHeader } from "@/components/shell/app-header";
 import { StocksDrawer } from "@/components/stocks/stocks-drawer";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useAttest } from "@/hooks/use-attest";
 import { useFiat } from "@/hooks/use-fiat";
@@ -42,13 +40,11 @@ export function DashboardView() {
   const [stocksOpen, setStocksOpen] = useState(false);
   const [receiveOpen, setReceiveOpen] = useState(false);
   const router = useRouter();
-  const handle = useSessionStore((s) => s.handle);
   const score = useSessionStore((s) => s.creditScore);
   const hide = useWalletStore((s) => s.hideBalances);
   const toggleHide = useWalletStore((s) => s.toggleHide);
   const activeCusd = useWalletStore((s) => s.activeCusd);
   const vaults = useWalletStore((s) => s.vaults);
-  const activity = useWalletStore((s) => s.activity);
   const yieldNow = useTickingYield();
   const { format } = useFiat();
   const attest = useAttest();
@@ -58,22 +54,7 @@ export function DashboardView() {
 
   return (
     <div className="px-5 pb-6 pt-5">
-      <header className="mb-5 flex items-center justify-between">
-        <ZipMark />
-        <div className="flex items-center gap-2">
-          <span className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold text-foreground">
-            ${handle}
-          </span>
-          <Link
-            href="/activity"
-            className="grid size-10 place-items-center rounded-full border border-line bg-surface"
-            aria-label="Activity and alerts"
-            onClick={() => haptic("light")}
-          >
-            <Bell className="size-4" />
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         <StateBanner tone="success" icon={<Sparkles className="size-3.5" />}>
@@ -82,6 +63,40 @@ export function DashboardView() {
         <StateBanner tone="neutral">
           Credit Score: {score} · {attest?.live ? "Verified on Creditcoin" : "Checking Creditcoin…"}
         </StateBanner>
+      </div>
+
+      <div className="mb-5 grid grid-cols-4 gap-2">
+        {ACTIONS.map((action) => {
+          const Icon = action.icon;
+          const body = (
+            <>
+              <span className="grid size-14 place-items-center rounded-[16px] border border-line bg-surface text-foreground transition-colors group-hover:border-primary group-hover:text-primary">
+                <Icon className="size-5" />
+              </span>
+              <span className="text-xs font-medium text-muted transition-colors group-hover:text-primary">{action.label}</span>
+            </>
+          );
+          if (action.href === "__stocks__" || action.href === "__receive__") {
+            return (
+              <button
+                key={action.label}
+                onClick={() => {
+                  haptic("light");
+                  if (action.href === "__stocks__") setStocksOpen(true);
+                  else setReceiveOpen(true);
+                }}
+                className="group flex flex-col items-center gap-2"
+              >
+                {body}
+              </button>
+            );
+          }
+          return (
+            <Link key={action.href} href={action.href} onClick={() => haptic("light")} className="group flex flex-col items-center gap-2">
+              {body}
+            </Link>
+          );
+        })}
       </div>
 
       <Card className="relative overflow-hidden bg-[radial-gradient(120%_120%_at_0%_0%,rgba(217,119,6,0.18),transparent_52%),#1A1612] p-5">
@@ -149,8 +164,8 @@ export function DashboardView() {
                     </div>
                   );
                 })}
-              <Link href="/save" className="mt-2 inline-block text-sm font-bold text-primary">
-                Manage Save
+              <Link href="/assets" className="mt-2 inline-block text-sm font-bold text-primary">
+                View Assets
               </Link>
             </div>
           ) : (
@@ -160,63 +175,6 @@ export function DashboardView() {
           )}
         </div>
       </Card>
-
-      <div className="mt-5 grid grid-cols-4 gap-2">
-        {ACTIONS.map((action) => {
-          const Icon = action.icon;
-          const body = (
-            <>
-              <span className="grid size-14 place-items-center rounded-[16px] border border-line bg-surface text-foreground transition-colors group-hover:border-primary group-hover:text-primary">
-                <Icon className="size-5" />
-              </span>
-              <span className="text-xs font-medium text-muted transition-colors group-hover:text-primary">{action.label}</span>
-            </>
-          );
-          if (action.href === "__stocks__" || action.href === "__receive__") {
-            return (
-              <button
-                key={action.label}
-                onClick={() => {
-                  haptic("light");
-                  if (action.href === "__stocks__") setStocksOpen(true);
-                  else setReceiveOpen(true);
-                }}
-                className="group flex flex-col items-center gap-2"
-              >
-                {body}
-              </button>
-            );
-          }
-          return (
-            <Link key={action.href} href={action.href} onClick={() => haptic("light")} className="group flex flex-col items-center gap-2">
-              {body}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 flex items-center justify-between">
-        <h2 className="text-base font-bold text-foreground">Recent</h2>
-        <Link href="/activity" className="text-sm font-medium text-primary">
-          See all
-        </Link>
-      </div>
-      <div className="mt-3 space-y-2">
-        {activity.slice(0, 4).map((item) => (
-          <Card key={item.id} className="flex items-center justify-between p-3">
-            <div>
-              <p className="text-sm font-bold text-foreground">{item.title}</p>
-              <p className="text-sm font-medium text-muted">{item.subtitle}</p>
-            </div>
-            <div className="text-right">
-              <p className={cn("text-sm font-bold", item.amountCusd > 0 ? "text-yield" : "text-foreground")}>
-                {hide ? "••" : format(item.amountCusd, { signed: item.amountCusd > 0 })}
-              </p>
-              <Badge tone={item.kind === "yield" || item.kind === "stock" ? "success" : "neutral"}>{item.kind}</Badge>
-            </div>
-          </Card>
-        ))}
-      </div>
 
       <StocksDrawer open={stocksOpen} onClose={() => setStocksOpen(false)} />
       <ReceiveDrawer

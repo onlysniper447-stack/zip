@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Home, Mic, UserRound, Wallet, WalletCards } from "lucide-react";
+import { Home, Mic, PieChart, Wallet, WalletCards } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { haptic } from "@/lib/haptic";
@@ -13,7 +13,7 @@ const ITEMS = [
   { href: "/activity", label: "Activity", icon: WalletCards },
   { href: "__voice__", label: "Voice", icon: Mic },
   { href: "/off-ramp", label: "Cash out", icon: Wallet },
-  { href: "/profile", label: "You", icon: UserRound },
+  { href: "/assets", label: "Assets", icon: PieChart },
 ] as const;
 
 export function BottomNav() {
@@ -26,7 +26,9 @@ export function BottomNav() {
     <nav className="absolute inset-x-0 bottom-0 z-30 border-t border-line bg-canvas/94 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
       <ul className="grid grid-cols-5">
         {ITEMS.map((item) => {
-          const active = item.href !== "__voice__" && pathname === item.href;
+          const active =
+            item.href !== "__voice__" &&
+            (pathname === item.href || (item.href === "/assets" && pathname === "/save"));
           const Icon = item.icon;
           if (item.href === "__voice__") {
             return (
