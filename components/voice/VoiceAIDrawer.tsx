@@ -191,6 +191,7 @@ export function VoiceAIDrawer() {
         memo: transcript,
         receiptId: lastReceipt,
         networkFeeLabel: "Sponsored · no extra fee",
+        verifiedLabel: lastReceipt ? "Cross-chain verified" : undefined,
       });
     } catch {
       setPhase("confirm");

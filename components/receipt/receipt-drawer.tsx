@@ -39,6 +39,7 @@ export function ReceiptDrawer() {
             ) : null}
             {receipt.memo ? <Row label="Memo" value={receipt.memo} /> : null}
             {receipt.railLabel ? <Row label="Arrives via" value={receipt.railLabel} /> : null}
+            {receipt.verifiedLabel ? <Row label="Verified" value={receipt.verifiedLabel} /> : null}
             <Row label="Network fee" value={receipt.networkFeeLabel ?? "Sponsored · no extra fee"} />
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted">Receipt ID</dt>

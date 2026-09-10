@@ -85,6 +85,7 @@ export function TipFlow() {
         memo: memo || undefined,
         receiptId: result.receiptId,
         railLabel: result.railName,
+        verifiedLabel: result.verifiedLabel,
       });
       router.push("/");
     } finally {

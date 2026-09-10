@@ -19,7 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [boot]);
 
   useEffect(() => {
-    if (!onboarded && pathname !== "/onboarding") {
+    if (!onboarded && pathname !== "/onboarding" && pathname !== "/docs") {
       router.replace("/onboarding");
     }
   }, [onboarded, pathname, router]);

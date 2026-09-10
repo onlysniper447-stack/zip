@@ -21,6 +21,7 @@ import { ReceiveDrawer } from "@/components/receive/receive-drawer";
 import { StocksDrawer } from "@/components/stocks/stocks-drawer";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useAttest } from "@/hooks/use-attest";
 import { useFiat } from "@/hooks/use-fiat";
 import { useTickingYield } from "@/hooks/use-ticking-yield";
 import { haptic } from "@/lib/haptic";
@@ -50,6 +51,7 @@ export function DashboardView() {
   const activity = useWalletStore((s) => s.activity);
   const yieldNow = useTickingYield();
   const { format } = useFiat();
+  const attest = useAttest();
   const vaultCusd = vaultTotal(vaults);
   const totalCusd = activeCusd + vaultCusd;
   const shown = pane === "active" ? activeCusd : vaultCusd;
@@ -77,7 +79,9 @@ export function DashboardView() {
         <StateBanner tone="success" icon={<Sparkles className="size-3.5" />}>
           Earning {(yieldNow.blendedApy * 100).toFixed(1)}% APY in background
         </StateBanner>
-        <StateBanner tone="neutral">Credit Score: {score} · Verified on Creditcoin</StateBanner>
+        <StateBanner tone="neutral">
+          Credit Score: {score} · {attest?.live ? "Verified on Creditcoin" : "Checking Creditcoin…"}
+        </StateBanner>
       </div>
 
       <Card className="relative overflow-hidden bg-[radial-gradient(120%_120%_at_0%_0%,rgba(217,119,6,0.18),transparent_52%),#1A1612] p-5">

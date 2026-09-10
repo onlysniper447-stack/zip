@@ -61,6 +61,7 @@ export function OffRampFlow() {
         counterparty: destLabel,
         receiptId: result.receiptId,
         railLabel: result.railName,
+        verifiedLabel: result.verifiedLabel,
       });
     } finally {
       setBusy(false);

@@ -20,7 +20,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const setVoiceOpen = useUiStore((s) => s.setVoiceOpen);
 
-  if (pathname === "/onboarding") return null;
+  if (pathname === "/onboarding" || pathname === "/docs") return null;
 
   return (
     <nav className="absolute inset-x-0 bottom-0 z-30 border-t border-line bg-canvas/94 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">

@@ -7,6 +7,8 @@ import { CurrencySelector } from "@/components/profile/currency-selector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import Link from "next/link";
+import { useAttest } from "@/hooks/use-attest";
 import { CREDIT_BUREAU_LABEL } from "@/lib/creditcoin";
 import { FIAT_META } from "@/lib/money";
 import { LOCAL_ACCOUNTS, accountLabel } from "@/lib/payments/rails";
@@ -17,6 +19,7 @@ export function ProfileView() {
   const fiat = session.preferredFiat ?? "NGN";
   const meta = FIAT_META[fiat];
   const linked = LOCAL_ACCOUNTS[fiat].find((item) => item.kind === "bank") ?? LOCAL_ACCOUNTS[fiat][0];
+  const attest = useAttest();
 
   return (
     <div>
@@ -56,8 +59,13 @@ export function ProfileView() {
           <CreditGauge score={session.creditScore} />
           <p className="mt-2 flex items-center gap-1 text-xs text-muted">
             <ShieldCheck className="size-3.5 text-yield" />
-            {CREDIT_BUREAU_LABEL}
+            {attest?.live ? CREDIT_BUREAU_LABEL : "Connecting to Creditcoin…"}
           </p>
+          {attest?.live ? (
+            <p className="mt-1 text-center text-[11px] text-muted">
+              {attest.sourceChain} attested through block {attest.attestedHeight}
+            </p>
+          ) : null}
         </Card>
 
         <Card className="mt-4 space-y-3 text-sm">
@@ -66,6 +74,10 @@ export function ProfileView() {
           <Row label="Payout rail" value={`${meta.railName} · ${meta.eta}`} />
           <Row label="Display currency" value={meta.label} />
         </Card>
+
+        <Link href="/docs" className="mt-4 block text-center text-sm font-bold text-primary">
+          How ZIP is verified
+        </Link>
 
         <Button variant="secondary" className="mt-5 w-full" onClick={session.signOut}>
           Sign out

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { attestForSettlement } from "@/lib/attestcoin/client";
 import { planRoute, settleRoute, type CorridorKind } from "@/lib/payments/engine";
 import { isFiatCode, type FiatCode } from "@/lib/money";
 
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     counterparty: body.counterparty,
     memo: body.memo,
   });
-  const settlement = await settleRoute(plan);
+  const attestation = await attestForSettlement();
+  const settlement = await settleRoute(plan, attestation);
   return NextResponse.json(settlement);
 }

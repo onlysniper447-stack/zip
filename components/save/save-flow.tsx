@@ -63,6 +63,7 @@ export function SaveFlow() {
         amountCusd: mode === "deposit" ? -amountCusd : amountCusd,
         receiptId: result.receiptId,
         railLabel: result.railName,
+        verifiedLabel: result.verifiedLabel,
       });
     } finally {
       setBusy(false);

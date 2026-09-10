@@ -1,3 +1,4 @@
+import type { SettlementAttestation } from "@/lib/attestcoin/types";
 import { createReceiptId } from "@/lib/ids";
 import {
   FIAT_META,
@@ -48,6 +49,10 @@ export type PublicSettlement = {
   eta: string;
   status: "complete";
   settledAt: string;
+  attested: boolean;
+  verifiedLabel: string;
+  sourceChain?: string;
+  attestedHeight?: number | null;
 };
 
 function pickStablecoin(destFiat: FiatCode): Stablecoin {
@@ -97,12 +102,19 @@ export function planRoute(input: PaymentRouteInput): RoutePlan {
   };
 }
 
-export async function settleRoute(plan: RoutePlan): Promise<PublicSettlement> {
-  await delay(plan.kind === "customer_pay" ? 700 : 1100);
-  return toPublicSettlement(plan);
+export async function settleRoute(
+  plan: RoutePlan,
+  attestation?: SettlementAttestation,
+): Promise<PublicSettlement> {
+  await delay(plan.kind === "customer_pay" ? 400 : 700);
+  return toPublicSettlement(plan, undefined, attestation);
 }
 
-export function toPublicSettlement(plan: RoutePlan, receiptId = createReceiptId()): PublicSettlement {
+export function toPublicSettlement(
+  plan: RoutePlan,
+  receiptId = createReceiptId(),
+  attestation?: SettlementAttestation,
+): PublicSettlement {
   return {
     receiptId,
     amount: plan.amountDest,
@@ -112,6 +124,10 @@ export function toPublicSettlement(plan: RoutePlan, receiptId = createReceiptId(
     eta: plan.eta,
     status: "complete",
     settledAt: new Date().toISOString(),
+    attested: attestation?.attested ?? false,
+    verifiedLabel: attestation?.label ?? "Verification pending",
+    sourceChain: attestation?.sourceChain,
+    attestedHeight: attestation?.attestedHeight,
   };
 }
 

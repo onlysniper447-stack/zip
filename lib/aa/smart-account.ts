@@ -18,6 +18,8 @@ export type PaymentIntent = {
 export type ExecutionResult = PublicSettlement & {
   sponsored: true;
   networkFeeUsd: 0;
+  attested: boolean;
+  verifiedLabel: string;
 };
 
 function corridorFor(kind: IntentKind) {
@@ -37,7 +39,7 @@ async function settleLocal(intent: PaymentIntent): Promise<ExecutionResult> {
     memo: intent.memo,
   });
   const settlement = await settleRoute(plan);
-  return { ...settlement, sponsored: true, networkFeeUsd: 0 };
+  return { ...settlement, sponsored: true, networkFeeUsd: 0, attested: settlement.attested, verifiedLabel: settlement.verifiedLabel };
 }
 
 /**

@@ -106,6 +106,7 @@ export function StocksDrawer({ open, onClose }: Props) {
         counterparty: selected.name,
         receiptId: result.receiptId,
         railLabel: result.railName,
+        verifiedLabel: result.verifiedLabel,
       });
     } finally {
       setBusy(false);

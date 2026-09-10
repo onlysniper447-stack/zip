@@ -67,6 +67,7 @@ export function ActivityView() {
                   amountCusd: item.amountCusd,
                   receiptId: item.receiptId,
                   networkFeeLabel: "Sponsored · no extra fee",
+                  verifiedLabel: "Cross-chain verified",
                 })
               }
             >
