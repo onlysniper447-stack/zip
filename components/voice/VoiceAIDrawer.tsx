@@ -56,7 +56,7 @@ export function VoiceAIDrawer() {
   const applyOfframp = useWalletStore((s) => s.applyOfframp);
   const applyStockTrade = useWalletStore((s) => s.applyStockTrade);
   const activeCusd = useWalletStore((s) => s.activeCusd);
-  const { fiat, accounts } = useFiat();
+  const { fiat, format, accounts } = useFiat();
   const examples = voiceExamples(fiat);
   const payout = accounts.find((item) => item.kind === "bank") ?? accounts[0];
   const payoutLabel = payout ? accountLabel(payout) : "linked account";
@@ -81,21 +81,25 @@ export function VoiceAIDrawer() {
     const cleaned = text.trim();
     if (!cleaned) return;
     setPhase("parsing");
+    const local = parseUtterance(cleaned, fiat);
     try {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 8000);
       const response = await fetch("/api/voice/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: cleaned, fiat }),
+        signal: controller.signal,
       });
+      window.clearTimeout(timer);
       const data = (await response.json()) as { intents?: ParsedIntent[] };
-      const next = data.intents?.length ? data.intents : parseUtterance(cleaned, fiat);
+      const next = data.intents?.length ? data.intents : local;
       setIntents(next);
       setPhase(next.length ? "confirm" : "idle");
       if (next.length) haptic("medium");
     } catch {
-      const next = parseUtterance(cleaned, fiat);
-      setIntents(next);
-      setPhase(next.length ? "confirm" : "idle");
+      setIntents(local);
+      setPhase(local.length ? "confirm" : "idle");
     }
   }
 
@@ -123,7 +127,7 @@ export function VoiceAIDrawer() {
 
   async function executeAll() {
     const totalUsd = intents.reduce((sum, item) => sum + intentUsd(item), 0);
-    if (totalUsd > activeCusd || !intents.length) return;
+    if (!intents.length || totalUsd > activeCusd) return;
     setPhase("executing");
     haptic("medium");
     let lastReceipt = "";
@@ -199,10 +203,11 @@ export function VoiceAIDrawer() {
   }
 
   const totalUsd = intents.reduce((sum, item) => sum + intentUsd(item), 0);
-  const overBalance = totalUsd > activeCusd;
+  const overBalance = intents.length > 0 && totalUsd > activeCusd;
   const confirming = phase === "confirm" || phase === "executing";
   const showOrb = phase === "idle" || phase === "listening";
   const canSend = intents.length > 0 && !overBalance && phase !== "executing" && phase !== "parsing";
+  const parseFailed = Boolean(transcript.trim()) && !intents.length && phase === "idle";
 
   return (
     <Sheet
@@ -263,11 +268,7 @@ export function VoiceAIDrawer() {
             </span>
           </button>
         ) : confirming ? (
-          <button
-            type="button"
-            onClick={listen}
-            className="mx-auto block text-sm font-bold text-primary"
-          >
+          <button type="button" onClick={listen} className="mx-auto block text-sm font-bold text-primary">
             Speak again
           </button>
         ) : null}
@@ -284,17 +285,21 @@ export function VoiceAIDrawer() {
         <Button variant="secondary" className="w-full" onClick={() => void parseText(transcript)}>
           Read command
         </Button>
-        <Button
-          className="w-full"
-          size="lg"
-          disabled={!canSend}
-          onClick={() => void executeAll()}
-        >
+
+        {parseFailed ? (
+          <p className="text-center text-sm font-medium text-danger">
+            Couldn’t find who to pay. Try “Send ₦50k to $ahmad”.
+          </p>
+        ) : null}
+        {overBalance ? (
+          <p className="text-center text-sm font-medium text-danger">
+            Not enough spendable balance. You have {format(activeCusd)}; this needs {format(totalUsd)}.
+          </p>
+        ) : null}
+
+        <Button className="w-full" size="lg" disabled={!canSend} onClick={() => void executeAll()}>
           {phase === "executing" ? "Sending…" : "Confirm & Send"}
         </Button>
-        {overBalance ? (
-          <p className="text-center text-sm font-medium text-danger">Not enough spendable balance for this batch.</p>
-        ) : null}
 
         {!confirming ? (
           <div className="space-y-2">

@@ -21,6 +21,7 @@ export type Contact = {
   phone: string;
   city: string;
   lastPaid?: string;
+  aliases?: string[];
 };
 
 export type ActivityItem = {
@@ -85,6 +86,14 @@ export const VAULTS: Vault[] = [
 export const CONTACTS: Contact[] = [
   { handle: "tunde", name: "Tunde Bakare", phone: "+234 802 114 8830", city: "Lagos", lastPaid: "Yesterday" },
   { handle: "amaka", name: "Amaka Obi", phone: "+234 809 220 4411", city: "Enugu", lastPaid: "Tue" },
+  {
+    handle: "ahmad",
+    name: "Ahmad Bello",
+    phone: "+234 809 331 7720",
+    city: "Kano",
+    lastPaid: "Fri",
+    aliases: ["ahmed", "ahmadu"],
+  },
   { handle: "kofi", name: "Kofi Mensah", phone: "+233 24 555 0192", city: "Accra", lastPaid: "Mar 2" },
   { handle: "zainab", name: "Zainab Bello", phone: "+234 701 883 2290", city: "Abuja" },
   { handle: "chidi", name: "Chidi Eze", phone: "+234 813 440 1188", city: "Port Harcourt", lastPaid: "Last week" },

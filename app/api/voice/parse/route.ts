@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "system",
-            content: `Extract ZIP money intents as JSON array. Display currency is ${fiat}. Each item: {"kind":"tip"|"stock"|"save"|"cashout","amount":number,"handle":"amaka","symbol":"TBILL"|"AAPL"|"TSLA"|"VOO","side":"buy"|"sell"}. Amount is in ${fiat} units, not USD. No prose. Handles without $. Split compound commands.`,
+            content: `Extract ZIP money intents as JSON array. Display currency is ${fiat}. Each item: {"kind":"tip"|"stock"|"save"|"cashout","amount":number,"handle":"ahmad","symbol":"TBILL"|"AAPL"|"TSLA"|"VOO","side":"buy"|"sell"}. Amount is in ${fiat} units, not USD. "50k" in NGN is 50000. Handles without $; any name or $handle is valid, including people not in a contact book. No prose. Split compound commands.`,
           },
           { role: "user", content: transcript },
         ],
