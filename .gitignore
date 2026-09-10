@@ -43,3 +43,7 @@ next-env.d.ts
 
 # local verify leftovers
 .tmp-theme-verify
+.tmp-deploy-files.json
+.tmp-deploy-parts/
+
+.vercel
