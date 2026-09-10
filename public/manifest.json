@@ -1,0 +1,16 @@
+{
+  "name": "ZIP",
+  "short_name": "ZIP",
+  "description": "Pay, borrow, and earn without the crypto homework.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E0C0A",
+  "theme_color": "#0E0C0A",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

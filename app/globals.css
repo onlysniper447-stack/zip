@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0e0c0a;
+  --foreground: #fffbeb;
+  --surface: #1a1612;
+  --primary: #d97706;
+  --yield: #fbbf24;
+  --success: #fbbf24;
+  --warn: #f59e0b;
+  --danger: #f87171;
+  --muted: #a8a29e;
+  --line: #2e261f;
+  --canvas: #0e0c0a;
+  --on-accent: #0e0c0a;
+  --credit: #26201a;
+  --credit-line: #3d3228;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-yield: var(--yield);
+  --color-success: var(--success);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-canvas: var(--canvas);
+  --color-on-accent: var(--on-accent);
+  --color-credit: var(--credit);
+  --color-credit-line: var(--credit-line);
+  --font-sans: var(--font-plus-jakarta);
+  --font-mono: var(--font-ibm-plex);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body {
+  background: #0e0c0a;
+  color: var(--foreground);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-weight: 500;
+}
+
+h1,
+h2,
+h3,
+.amount {
+  color: #fffbeb;
+  font-weight: 700;
+}
+
+input[type="range"] {
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: #2e261f;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #d97706;
+  box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.18);
+}
+
+.zip-frame {
+  transform: translateZ(0);
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

@@ -1,0 +1,220 @@
+"use client";
+
+import { motion } from "framer-motion";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Bell,
+  Eye,
+  EyeOff,
+  Landmark,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { StateBanner } from "@/components/banners/state-banner";
+import { ZipMark } from "@/components/brand/zip-mark";
+import { DualValue } from "@/components/money/dual-value";
+import { ReceiveDrawer } from "@/components/receive/receive-drawer";
+import { StocksDrawer } from "@/components/stocks/stocks-drawer";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { useFiat } from "@/hooks/use-fiat";
+import { useTickingYield } from "@/hooks/use-ticking-yield";
+import { haptic } from "@/lib/haptic";
+import { VAULTS } from "@/lib/mock/catalog";
+import { cn } from "@/lib/utils";
+import { useSessionStore } from "@/stores/session-store";
+import { useWalletStore, vaultTotal } from "@/stores/wallet-store";
+
+const ACTIONS = [
+  { href: "/tip", label: "Tip", icon: ArrowUpRight },
+  { href: "__receive__", label: "Receive", icon: ArrowDownLeft },
+  { href: "/borrow", label: "Borrow", icon: Landmark },
+  { href: "__stocks__", label: "Stocks", icon: TrendingUp },
+] as const;
+
+export function DashboardView() {
+  const [pane, setPane] = useState<"active" | "save">("active");
+  const [stocksOpen, setStocksOpen] = useState(false);
+  const [receiveOpen, setReceiveOpen] = useState(false);
+  const router = useRouter();
+  const handle = useSessionStore((s) => s.handle);
+  const score = useSessionStore((s) => s.creditScore);
+  const hide = useWalletStore((s) => s.hideBalances);
+  const toggleHide = useWalletStore((s) => s.toggleHide);
+  const activeCusd = useWalletStore((s) => s.activeCusd);
+  const vaults = useWalletStore((s) => s.vaults);
+  const activity = useWalletStore((s) => s.activity);
+  const yieldNow = useTickingYield();
+  const { format } = useFiat();
+  const vaultCusd = vaultTotal(vaults);
+  const totalCusd = activeCusd + vaultCusd;
+  const shown = pane === "active" ? activeCusd : vaultCusd;
+
+  return (
+    <div className="px-5 pb-6 pt-5">
+      <header className="mb-5 flex items-center justify-between">
+        <ZipMark />
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold text-foreground">
+            ${handle}
+          </span>
+          <button className="grid size-10 place-items-center rounded-full border border-line bg-surface" aria-label="Alerts">
+            <Bell className="size-4" />
+          </button>
+        </div>
+      </header>
+
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        <StateBanner tone="success" icon={<Sparkles className="size-3.5" />}>
+          Earning {(yieldNow.blendedApy * 100).toFixed(1)}% APY in background
+        </StateBanner>
+        <StateBanner tone="neutral">Credit Score: {score} · Verified on Creditcoin</StateBanner>
+      </div>
+
+      <Card className="relative overflow-hidden bg-[radial-gradient(120%_120%_at_0%_0%,rgba(217,119,6,0.18),transparent_52%),#1A1612] p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">Total liquidity</p>
+          <button
+            onClick={() => {
+              haptic("light");
+              toggleHide();
+            }}
+            className="grid size-9 place-items-center rounded-full bg-white/6"
+            aria-label={hide ? "Show balances" : "Hide balances"}
+          >
+            {hide ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
+        <DualValue amountCusd={totalCusd} size="hero" masked={hide} />
+        <p className="mt-3 text-sm font-medium text-yield" suppressHydrationWarning>
+          +{hide ? "••" : format(yieldNow.sessionUsd)} this session · {format(yieldNow.dailyUsd)} / day
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 rounded-[16px] bg-canvas p-1">
+          {(["active", "save"] as const).map((key) => (
+            <button
+              key={key}
+              onClick={() => {
+                haptic("light");
+                setPane(key);
+              }}
+              className={cn(
+                "relative rounded-[12px] py-2.5 text-sm font-bold",
+                pane === key ? "text-on-accent" : "text-muted",
+              )}
+            >
+              {pane === key ? (
+                <motion.span
+                  layoutId="pane"
+                  className="absolute inset-0 rounded-[12px] bg-primary"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+              ) : null}
+              <span className="relative">{key === "active" ? "Active balance" : "Save"}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 rounded-[16px] border border-line bg-canvas p-4">
+          <DualValue amountCusd={shown} size="md" masked={hide} />
+          {pane === "save" ? (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm font-medium text-yield">
+                Live {(yieldNow.blendedApy * 100).toFixed(1)}% APY on locked deposits
+              </p>
+              {vaults
+                .filter((v) => v.depositedCusd > 0)
+                .map((position) => {
+                  const vault = VAULTS.find((item) => item.id === position.id);
+                  return (
+                    <div key={position.id} className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-muted">{vault?.name}</span>
+                      <span className="font-bold text-foreground">
+                        {hide ? "••••" : format(position.depositedCusd)}{" "}
+                        <span className="font-medium text-yield">{((vault?.apy ?? 0) * 100).toFixed(1)}%</span>
+                      </span>
+                    </div>
+                  );
+                })}
+              <Link href="/save" className="mt-2 inline-block text-sm font-bold text-primary">
+                Manage Save
+              </Link>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm font-medium text-muted">
+              Spendable now. Move idle cash into Save to keep earning in the background.
+            </p>
+          )}
+        </div>
+      </Card>
+
+      <div className="mt-5 grid grid-cols-4 gap-2">
+        {ACTIONS.map((action) => {
+          const Icon = action.icon;
+          const body = (
+            <>
+              <span className="grid size-14 place-items-center rounded-[16px] border border-line bg-surface text-foreground transition-colors group-hover:border-primary group-hover:text-primary">
+                <Icon className="size-5" />
+              </span>
+              <span className="text-xs font-medium text-muted transition-colors group-hover:text-primary">{action.label}</span>
+            </>
+          );
+          if (action.href === "__stocks__" || action.href === "__receive__") {
+            return (
+              <button
+                key={action.label}
+                onClick={() => {
+                  haptic("light");
+                  if (action.href === "__stocks__") setStocksOpen(true);
+                  else setReceiveOpen(true);
+                }}
+                className="group flex flex-col items-center gap-2"
+              >
+                {body}
+              </button>
+            );
+          }
+          return (
+            <Link key={action.href} href={action.href} onClick={() => haptic("light")} className="group flex flex-col items-center gap-2">
+              {body}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between">
+        <h2 className="text-base font-bold text-foreground">Recent</h2>
+        <Link href="/activity" className="text-sm font-medium text-primary">
+          See all
+        </Link>
+      </div>
+      <div className="mt-3 space-y-2">
+        {activity.slice(0, 4).map((item) => (
+          <Card key={item.id} className="flex items-center justify-between p-3">
+            <div>
+              <p className="text-sm font-bold text-foreground">{item.title}</p>
+              <p className="text-sm font-medium text-muted">{item.subtitle}</p>
+            </div>
+            <div className="text-right">
+              <p className={cn("text-sm font-bold", item.amountCusd > 0 ? "text-yield" : "text-foreground")}>
+                {hide ? "••" : format(item.amountCusd, { signed: item.amountCusd > 0 })}
+              </p>
+              <Badge tone={item.kind === "yield" || item.kind === "stock" ? "success" : "neutral"}>{item.kind}</Badge>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <StocksDrawer open={stocksOpen} onClose={() => setStocksOpen(false)} />
+      <ReceiveDrawer
+        open={receiveOpen}
+        onClose={() => setReceiveOpen(false)}
+        onScanned={(handle) => router.push(`/tip?to=${handle}`)}
+      />
+    </div>
+  );
+}
