@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { Check, Copy, Share2 } from "lucide-react";
 import { useState } from "react";
 import { DualValue } from "@/components/money/dual-value";
 import { Button } from "@/components/ui/button";
@@ -63,9 +63,23 @@ export function ReceiptDrawer() {
           <Button variant="secondary" className="w-full" onClick={close}>
             Done
           </Button>
-          <button className="flex w-full items-center justify-center gap-2 text-xs text-muted">
-            <ExternalLink className="size-3.5" />
-            View receipt details
+          <button
+            className="flex w-full items-center justify-center gap-2 text-xs text-muted"
+            onClick={async () => {
+              const lines = [
+                receipt.title,
+                receipt.subtitle,
+                receipt.counterparty ? `To ${receipt.counterparty}` : "",
+                `Receipt ${receipt.receiptId}`,
+              ].filter(Boolean);
+              await navigator.clipboard.writeText(lines.join("\n"));
+              setCopied(true);
+              haptic("success");
+              window.setTimeout(() => setCopied(false), 1200);
+            }}
+          >
+            <Share2 className="size-3.5" />
+            {copied ? "Copied receipt" : "Copy receipt"}
           </button>
         </div>
       ) : null}

@@ -62,9 +62,14 @@ export function DashboardView() {
           <span className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold text-foreground">
             ${handle}
           </span>
-          <button className="grid size-10 place-items-center rounded-full border border-line bg-surface" aria-label="Alerts">
+          <Link
+            href="/activity"
+            className="grid size-10 place-items-center rounded-full border border-line bg-surface"
+            aria-label="Activity and alerts"
+            onClick={() => haptic("light")}
+          >
             <Bell className="size-4" />
-          </button>
+          </Link>
         </div>
       </header>
 

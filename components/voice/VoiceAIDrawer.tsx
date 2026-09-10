@@ -9,21 +9,16 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
 import { VoiceWaveform } from "@/components/voice/waveform";
+import { useFiat } from "@/hooks/use-fiat";
 import { executeIntent } from "@/lib/aa/smart-account";
 import { haptic } from "@/lib/haptic";
 import { MARKET } from "@/lib/mock/stocks";
-import { formatNgn, ngnToCusd } from "@/lib/money";
-import { parseUtterance, type ParsedIntent } from "@/lib/voice/parse-intents";
+import { accountLabel } from "@/lib/payments/rails";
+import { intentUsd, parseUtterance, voiceExamples, type ParsedIntent } from "@/lib/voice/parse-intents";
 import { useUiStore } from "@/stores/ui-store";
 import { useWalletStore } from "@/stores/wallet-store";
 
 type Phase = "idle" | "listening" | "parsing" | "confirm" | "executing" | "done";
-
-const EXAMPLES = [
-  "Send ₦10k to @amaka and put ₦2k in T-Bills",
-  "Tip $tunde ₦5,000",
-  "Buy ₦20k of VOO",
-];
 
 type BrowserSpeech = {
   lang: string;
@@ -36,7 +31,7 @@ type BrowserSpeech = {
   stop: () => void;
 };
 
-function getRecognizer(): BrowserSpeech | null {
+function getRecognizer(lang: string): BrowserSpeech | null {
   const Speech = (
     window as Window & {
       SpeechRecognition?: new () => BrowserSpeech;
@@ -47,7 +42,7 @@ function getRecognizer(): BrowserSpeech | null {
   ).webkitSpeechRecognition;
   if (!Speech) return null;
   const rec = new Speech();
-  rec.lang = "en-NG";
+  rec.lang = lang;
   rec.interimResults = true;
   rec.continuous = false;
   return rec;
@@ -62,6 +57,10 @@ export function VoiceAIDrawer() {
   const applyOfframp = useWalletStore((s) => s.applyOfframp);
   const applyStockTrade = useWalletStore((s) => s.applyStockTrade);
   const activeCusd = useWalletStore((s) => s.activeCusd);
+  const { fiat, format, accounts } = useFiat();
+  const examples = voiceExamples(fiat);
+  const payout = accounts.find((item) => item.kind === "bank") ?? accounts[0];
+  const payoutLabel = payout ? accountLabel(payout) : "linked account";
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [transcript, setTranscript] = useState("");
@@ -87,15 +86,15 @@ export function VoiceAIDrawer() {
       const response = await fetch("/api/voice/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: cleaned }),
+        body: JSON.stringify({ transcript: cleaned, fiat }),
       });
       const data = (await response.json()) as { intents?: ParsedIntent[] };
-      const next = data.intents?.length ? data.intents : parseUtterance(cleaned);
+      const next = data.intents?.length ? data.intents : parseUtterance(cleaned, fiat);
       setIntents(next);
       setPhase(next.length ? "confirm" : "idle");
       if (next.length) haptic("medium");
     } catch {
-      const next = parseUtterance(cleaned);
+      const next = parseUtterance(cleaned, fiat);
       setIntents(next);
       setPhase(next.length ? "confirm" : "idle");
     }
@@ -103,7 +102,7 @@ export function VoiceAIDrawer() {
 
   function listen() {
     haptic("medium");
-    const rec = getRecognizer();
+    const rec = getRecognizer(fiat === "NGN" ? "en-NG" : fiat === "GBP" ? "en-GB" : fiat === "EUR" ? "en-IE" : "en-US");
     if (!rec) {
       setPhase("idle");
       return;
@@ -124,30 +123,54 @@ export function VoiceAIDrawer() {
   }
 
   async function executeAll() {
-    const totalNgn = intents.reduce((sum, item) => sum + item.amountNgn, 0);
-    if (ngnToCusd(totalNgn) > activeCusd) return;
+    const totalUsd = intents.reduce((sum, item) => sum + intentUsd(item), 0);
+    if (totalUsd > activeCusd) return;
     setPhase("executing");
     let lastReceipt = "";
     try {
       for (const intent of intents) {
-        const amountCusd = ngnToCusd(intent.amountNgn);
+        const amountCusd = intentUsd(intent);
         if (intent.kind === "tip") {
-          const result = await executeIntent({ kind: "tip", amountCusd, counterparty: intent.handle });
+          const result = await executeIntent({
+            kind: "tip",
+            amountCusd,
+            sourceFiat: fiat,
+            destFiat: fiat,
+            counterparty: intent.handle,
+          });
           applyTip({ to: intent.handle, amountCusd, memo: "VoiceAI", receiptId: result.receiptId });
           lastReceipt = result.receiptId;
         } else if (intent.kind === "save") {
-          const result = await executeIntent({ kind: "save", amountCusd, counterparty: "prime" });
+          const result = await executeIntent({
+            kind: "save",
+            amountCusd,
+            sourceFiat: fiat,
+            destFiat: fiat,
+            counterparty: "prime",
+          });
           applySave("prime", amountCusd, result.receiptId);
           lastReceipt = result.receiptId;
         } else if (intent.kind === "cashout") {
-          const result = await executeIntent({ kind: "offramp", amountCusd, counterparty: "GTBank ··4419" });
-          applyOfframp({ amountCusd, destination: "GTBank ··4419", receiptId: result.receiptId });
+          const result = await executeIntent({
+            kind: "offramp",
+            amountCusd,
+            sourceFiat: fiat,
+            destFiat: fiat,
+            counterparty: payoutLabel,
+          });
+          applyOfframp({ amountCusd, destination: payoutLabel, receiptId: result.receiptId });
           lastReceipt = result.receiptId;
         } else {
           const asset = MARKET.find((item) => item.symbol === intent.symbol);
           const priceUsd = asset?.priceUsd ?? 99.48;
           const shares = amountCusd / priceUsd;
-          const result = await executeIntent({ kind: "stock", amountCusd, counterparty: intent.symbol });
+          const result = await executeIntent({
+            kind: "stock",
+            amountCusd,
+            sourceFiat: fiat,
+            destFiat: fiat,
+            counterparty: intent.symbol,
+          });
           applyStockTrade({
             symbol: intent.symbol,
             side: intent.side,
@@ -164,7 +187,7 @@ export function VoiceAIDrawer() {
       openReceipt({
         title: intents.length > 1 ? "Voice batch complete" : intents[0]?.label ?? "Done",
         subtitle: `${intents.length} action${intents.length === 1 ? "" : "s"} · sponsored`,
-        amountCusd: -ngnToCusd(totalNgn),
+        amountCusd: -totalUsd,
         memo: transcript,
         receiptId: lastReceipt,
         networkFeeLabel: "Sponsored · no extra fee",
@@ -174,8 +197,8 @@ export function VoiceAIDrawer() {
     }
   }
 
-  const totalNgn = intents.reduce((sum, item) => sum + item.amountNgn, 0);
-  const overBalance = ngnToCusd(totalNgn) > activeCusd;
+  const totalUsd = intents.reduce((sum, item) => sum + intentUsd(item), 0);
+  const overBalance = totalUsd > activeCusd;
 
   return (
     <Sheet
@@ -216,7 +239,7 @@ export function VoiceAIDrawer() {
         <Input
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
-          placeholder="Or type: Send ₦10k to @amaka and put ₦2k in T-Bills"
+          placeholder={`Or type: ${examples[0]}`}
           onKeyDown={(e) => {
             if (e.key === "Enter") void parseText(transcript);
           }}
@@ -234,7 +257,7 @@ export function VoiceAIDrawer() {
             {intents.map((intent) => (
               <div key={intent.id} className="flex items-center justify-between rounded-[16px] bg-canvas px-3 py-2">
                 <p className="text-sm font-medium text-foreground">{intent.label}</p>
-                <DualValue amountCusd={-ngnToCusd(intent.amountNgn)} size="sm" align="right" />
+                <DualValue amountCusd={-intentUsd(intent)} size="sm" align="right" />
               </div>
             ))}
             <div className="rounded-[16px] border border-[rgba(217,119,6,0.3)] bg-[rgba(217,119,6,0.15)] px-3 py-2 text-sm font-medium text-[#F59E0B]">
@@ -242,9 +265,9 @@ export function VoiceAIDrawer() {
             </div>
             {overBalance ? (
               <p className="text-sm font-medium text-danger">Not enough spendable balance for this batch.</p>
-            ) : totalNgn >= 50_000 ? (
+            ) : totalUsd >= 33 ? (
               <SlideToConfirm
-                label={`Slide to run ${formatNgn(totalNgn)}`}
+                label={`Slide to run ${format(totalUsd)}`}
                 loading={phase === "executing"}
                 onConfirm={executeAll}
               />
@@ -256,7 +279,7 @@ export function VoiceAIDrawer() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {EXAMPLES.map((example) => (
+            {examples.map((example) => (
               <button
                 key={example}
                 onClick={() => {

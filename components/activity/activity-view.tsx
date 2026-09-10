@@ -14,6 +14,8 @@ import { useWalletStore } from "@/stores/wallet-store";
 const FILTERS: Array<{ id: "all" | ActivityKind; label: string }> = [
   { id: "all", label: "All" },
   { id: "tip", label: "Tips" },
+  { id: "receive", label: "Received" },
+  { id: "save", label: "Save" },
   { id: "yield", label: "Yield" },
   { id: "loan", label: "Loans" },
   { id: "cashout", label: "Cash out" },
