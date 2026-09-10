@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { StateBanner } from "@/components/banners/state-banner";
 import { DualValue } from "@/components/money/dual-value";
+import { SavePools } from "@/components/dashboard/save-pools";
 import { ReceiveDrawer } from "@/components/receive/receive-drawer";
 import { AppHeader } from "@/components/shell/app-header";
 import { StocksDrawer } from "@/components/stocks/stocks-drawer";
@@ -23,7 +24,6 @@ import { useAttest } from "@/hooks/use-attest";
 import { useFiat } from "@/hooks/use-fiat";
 import { useTickingYield } from "@/hooks/use-ticking-yield";
 import { haptic } from "@/lib/haptic";
-import { VAULTS } from "@/lib/mock/catalog";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 import { useWalletStore, vaultTotal } from "@/stores/wallet-store";
@@ -144,34 +144,15 @@ export function DashboardView() {
         </div>
 
         <div className="mt-4 rounded-[16px] border border-line bg-canvas p-4">
-          <DualValue amountCusd={shown} size="md" masked={hide} />
           {pane === "save" ? (
-            <div className="mt-3 space-y-2">
-              <p className="text-sm font-medium text-yield">
-                Live {(yieldNow.blendedApy * 100).toFixed(1)}% APY on locked deposits
-              </p>
-              {vaults
-                .filter((v) => v.depositedCusd > 0)
-                .map((position) => {
-                  const vault = VAULTS.find((item) => item.id === position.id);
-                  return (
-                    <div key={position.id} className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-muted">{vault?.name}</span>
-                      <span className="font-bold text-foreground">
-                        {hide ? "••••" : format(position.depositedCusd)}{" "}
-                        <span className="font-medium text-yield">{((vault?.apy ?? 0) * 100).toFixed(1)}%</span>
-                      </span>
-                    </div>
-                  );
-                })}
-              <Link href="/assets" className="mt-2 inline-block text-sm font-bold text-primary">
-                View Assets
-              </Link>
-            </div>
+            <SavePools vaults={vaults} hide={hide} tick={Math.floor(yieldNow.sessionUsd * 1000)} />
           ) : (
-            <p className="mt-3 text-sm font-medium text-muted">
-              Spendable now. Move idle cash into Save to keep earning in the background.
-            </p>
+            <>
+              <DualValue amountCusd={shown} size="md" masked={hide} />
+              <p className="mt-3 text-sm font-medium text-muted">
+                Spendable now. Move idle cash into Save to keep earning on Creditcoin pools.
+              </p>
+            </>
           )}
         </div>
       </Card>

@@ -2,7 +2,6 @@
 
 import { Mic, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { SlideToConfirm } from "@/components/confirm/slide-to-confirm";
 import { DualValue } from "@/components/money/dual-value";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,7 +56,7 @@ export function VoiceAIDrawer() {
   const applyOfframp = useWalletStore((s) => s.applyOfframp);
   const applyStockTrade = useWalletStore((s) => s.applyStockTrade);
   const activeCusd = useWalletStore((s) => s.activeCusd);
-  const { fiat, format, accounts } = useFiat();
+  const { fiat, accounts } = useFiat();
   const examples = voiceExamples(fiat);
   const payout = accounts.find((item) => item.kind === "bank") ?? accounts[0];
   const payoutLabel = payout ? accountLabel(payout) : "linked account";
@@ -124,8 +123,9 @@ export function VoiceAIDrawer() {
 
   async function executeAll() {
     const totalUsd = intents.reduce((sum, item) => sum + intentUsd(item), 0);
-    if (totalUsd > activeCusd) return;
+    if (totalUsd > activeCusd || !intents.length) return;
     setPhase("executing");
+    haptic("medium");
     let lastReceipt = "";
     try {
       for (const intent of intents) {
@@ -200,6 +200,9 @@ export function VoiceAIDrawer() {
 
   const totalUsd = intents.reduce((sum, item) => sum + intentUsd(item), 0);
   const overBalance = totalUsd > activeCusd;
+  const confirming = phase === "confirm" || phase === "executing";
+  const showOrb = phase === "idle" || phase === "listening";
+  const canSend = intents.length > 0 && !overBalance && phase !== "executing" && phase !== "parsing";
 
   return (
     <Sheet
@@ -211,36 +214,69 @@ export function VoiceAIDrawer() {
     >
       <div className="space-y-4">
         <Card className="border-line bg-canvas p-4">
-          <VoiceWaveform active={phase === "listening" || phase === "executing"} />
-          <p className="mt-3 text-center text-sm font-medium text-muted">
+          {showOrb ? <VoiceWaveform active={phase === "listening"} /> : null}
+
+          {confirming && intents.length ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <Sparkles className="size-4 text-yield" />
+                Verify before sending
+              </div>
+              {intents.map((intent) => (
+                <div key={intent.id} className="flex items-center justify-between rounded-[16px] bg-surface px-3 py-2">
+                  <p className="text-sm font-medium text-foreground">{intent.label}</p>
+                  <DualValue amountCusd={-intentUsd(intent)} size="sm" align="right" />
+                </div>
+              ))}
+              <div className="rounded-[16px] border border-[rgba(217,119,6,0.3)] bg-[rgba(217,119,6,0.15)] px-3 py-2 text-sm font-medium text-[#F59E0B]">
+                Network fee · sponsored
+              </div>
+            </div>
+          ) : null}
+
+          <p className={`${showOrb || confirming ? "mt-3" : ""} text-center text-sm font-medium text-muted`}>
             {phase === "listening"
               ? "Listening…"
               : phase === "parsing"
                 ? "Reading that back…"
                 : phase === "executing"
                   ? "Sending with sponsored network fee"
-                  : "Tap the orb and speak naturally"}
+                  : confirming
+                    ? "Check each action, then Confirm & Send"
+                    : "Tap the orb and speak naturally"}
           </p>
           {transcript ? (
             <p className="mt-2 text-center text-sm font-bold text-foreground">“{transcript}”</p>
           ) : null}
         </Card>
 
-        <button
-          onClick={listen}
-          className="relative mx-auto grid size-16 place-items-center rounded-full"
-          aria-label="Start listening"
-        >
-          <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-yield opacity-70 blur-md" />
-          <span className="relative grid size-16 place-items-center rounded-full bg-canvas [background:linear-gradient(#0E0C0A,#0E0C0A)_padding-box,linear-gradient(135deg,#D97706,#FBBF24)_border-box] border-2 border-transparent">
-            <Mic className="size-6 text-foreground" />
-          </span>
-        </button>
+        {showOrb ? (
+          <button
+            type="button"
+            onClick={listen}
+            className="relative mx-auto grid size-16 place-items-center rounded-full"
+            aria-label="Start listening"
+          >
+            <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-yield opacity-70 blur-md" />
+            <span className="relative grid size-16 place-items-center rounded-full bg-canvas [background:linear-gradient(#0E0C0A,#0E0C0A)_padding-box,linear-gradient(135deg,#D97706,#FBBF24)_border-box] border-2 border-transparent">
+              <Mic className="size-6 text-foreground" />
+            </span>
+          </button>
+        ) : confirming ? (
+          <button
+            type="button"
+            onClick={listen}
+            className="mx-auto block text-sm font-bold text-primary"
+          >
+            Speak again
+          </button>
+        ) : null}
 
         <Input
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
           placeholder={`Or type: ${examples[0]}`}
+          aria-label="Voice command"
           onKeyDown={(e) => {
             if (e.key === "Enter") void parseText(transcript);
           }}
@@ -248,41 +284,24 @@ export function VoiceAIDrawer() {
         <Button variant="secondary" className="w-full" onClick={() => void parseText(transcript)}>
           Read command
         </Button>
+        <Button
+          className="w-full"
+          size="lg"
+          disabled={!canSend}
+          onClick={() => void executeAll()}
+        >
+          {phase === "executing" ? "Sending…" : "Confirm & Send"}
+        </Button>
+        {overBalance ? (
+          <p className="text-center text-sm font-medium text-danger">Not enough spendable balance for this batch.</p>
+        ) : null}
 
-        {phase === "confirm" || phase === "executing" ? (
-          <Card className="space-y-3 p-4">
-            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <Sparkles className="size-4 text-yield" />
-              Confirm {intents.length} action{intents.length === 1 ? "" : "s"}
-            </div>
-            {intents.map((intent) => (
-              <div key={intent.id} className="flex items-center justify-between rounded-[16px] bg-canvas px-3 py-2">
-                <p className="text-sm font-medium text-foreground">{intent.label}</p>
-                <DualValue amountCusd={-intentUsd(intent)} size="sm" align="right" />
-              </div>
-            ))}
-            <div className="rounded-[16px] border border-[rgba(217,119,6,0.3)] bg-[rgba(217,119,6,0.15)] px-3 py-2 text-sm font-medium text-[#F59E0B]">
-              Network fee · sponsored
-            </div>
-            {overBalance ? (
-              <p className="text-sm font-medium text-danger">Not enough spendable balance for this batch.</p>
-            ) : totalUsd >= 33 ? (
-              <SlideToConfirm
-                label={`Slide to run ${format(totalUsd)}`}
-                loading={phase === "executing"}
-                onConfirm={executeAll}
-              />
-            ) : (
-              <Button className="w-full" size="lg" disabled={phase === "executing"} onClick={() => void executeAll()}>
-                Confirm & send
-              </Button>
-            )}
-          </Card>
-        ) : (
+        {!confirming ? (
           <div className="space-y-2">
             {examples.map((example) => (
               <button
                 key={example}
+                type="button"
                 onClick={() => {
                   setTranscript(example);
                   void parseText(example);
@@ -293,7 +312,7 @@ export function VoiceAIDrawer() {
               </button>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </Sheet>
   );
