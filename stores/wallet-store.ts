@@ -78,16 +78,29 @@ function pushActivity(list: ActivityItem[], item: ActivityItem) {
   return [item, ...list].slice(0, 40);
 }
 
+const SEED_VAULTS: VaultPosition[] = [
+  { id: "prime", depositedCusd: 900 },
+  { id: "notes", depositedCusd: 408.33 },
+  { id: "ctc-stake", depositedCusd: 240 },
+  { id: "ctc-usdc", depositedCusd: 180 },
+  { id: "gcre-eth", depositedCusd: 96 },
+];
+
+function mergeVaults(saved?: VaultPosition[]) {
+  const list = [...(saved ?? [])];
+  for (const seed of SEED_VAULTS) {
+    if (!list.some((item) => item.id === seed.id)) list.push(seed);
+  }
+  return list;
+}
+
 export const useWalletStore = create<WalletState>()(
   persist(
     (set, get) => ({
       booted: false,
       hideBalances: false,
       activeCusd: 325,
-      vaults: [
-        { id: "prime", depositedCusd: 900 },
-        { id: "notes", depositedCusd: 408.33 },
-      ],
+      vaults: SEED_VAULTS.map((item) => ({ ...item })),
       holdings: [{ symbol: "AAPL", shares: 0.42 }],
       tokenBalances: { ...DEFAULT_TOKEN_BALANCES },
       activity: SEED_ACTIVITY,
@@ -259,7 +272,7 @@ export const useWalletStore = create<WalletState>()(
           ...current,
           hideBalances: saved.hideBalances ?? current.hideBalances,
           activeCusd: saved.activeCusd ?? current.activeCusd,
-          vaults: saved.vaults ?? current.vaults,
+          vaults: mergeVaults(saved.vaults ?? current.vaults),
           holdings: saved.holdings ?? current.holdings ?? [],
           tokenBalances: saved.tokenBalances ?? current.tokenBalances ?? DEFAULT_TOKEN_BALANCES,
           activity: saved.activity ?? current.activity,

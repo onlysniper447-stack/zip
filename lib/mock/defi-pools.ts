@@ -1,7 +1,9 @@
+import type { VaultId } from "@/lib/mock/catalog";
+
 export type DefiPoolKind = "staking" | "rwa" | "notes" | "dex";
 
 export type DefiPool = {
-  id: string;
+  id: VaultId;
   name: string;
   pair: string;
   pairTokens: string[];
@@ -16,10 +18,14 @@ export type DefiPool = {
   live?: boolean;
 };
 
+function allocated(vaults: Array<{ id: string; depositedCusd: number }>, id: string, fallback: number) {
+  return vaults.find((item) => item.id === id)?.depositedCusd ?? fallback;
+}
+
 export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: number }>, tick = 0): DefiPool[] {
-  const prime = vaults.find((item) => item.id === "prime")?.depositedCusd ?? 0;
-  const notes = vaults.find((item) => item.id === "notes")?.depositedCusd ?? 0;
   const drift = ((tick % 17) - 8) * 0.0004;
+  const ctcUsdc = allocated(vaults, "ctc-usdc", 180);
+  const gcreEth = allocated(vaults, "gcre-eth", 96);
 
   return [
     {
@@ -33,7 +39,7 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "staking",
       protocol: "Creditcoin",
       detail: "Validator delegation",
-      allocatedCusd: 240,
+      allocatedCusd: allocated(vaults, "ctc-stake", 240),
     },
     {
       id: "prime",
@@ -46,7 +52,7 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "rwa",
       protocol: "Creditcoin",
       detail: "Emerging-markets credit pool",
-      allocatedCusd: prime || 900,
+      allocatedCusd: allocated(vaults, "prime", 900),
     },
     {
       id: "notes",
@@ -59,7 +65,7 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "notes",
       protocol: "Creditcoin",
       detail: "Fixed-income notes",
-      allocatedCusd: notes || 408.33,
+      allocatedCusd: allocated(vaults, "notes", 408.33),
     },
     {
       id: "ctc-usdc",
@@ -72,8 +78,8 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "dex",
       protocol: "Creditcoin DEX",
       detail: "Active liquidity pair",
-      allocatedCusd: 180,
-      poolShare: 0.42,
+      allocatedCusd: ctcUsdc,
+      poolShare: Math.min(0.95, 0.42 * (ctcUsdc / 180)),
       live: true,
     },
     {
@@ -87,8 +93,8 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "dex",
       protocol: "Creditcoin DEX",
       detail: "Cross-pair liquidity",
-      allocatedCusd: 96,
-      poolShare: 0.18,
+      allocatedCusd: gcreEth,
+      poolShare: Math.min(0.95, 0.18 * (gcreEth / 96)),
       live: true,
     },
   ];

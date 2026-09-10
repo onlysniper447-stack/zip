@@ -1,4 +1,4 @@
-export type VaultId = "prime" | "notes" | "invoice" | "float";
+export type VaultId = "prime" | "notes" | "invoice" | "float" | "ctc-stake" | "ctc-usdc" | "gcre-eth";
 export type TrancheId = "standard" | "collateral";
 export type ActivityKind = "tip" | "receive" | "yield" | "loan" | "cashout" | "save" | "stock" | "swap";
 export type ActivityStatus = "complete" | "pending" | "failed";
@@ -80,6 +80,39 @@ export const VAULTS: Vault[] = [
     minCusd: 5,
     description: "Underwrites mobile-money and bank payout float. Instant exit, modest yield.",
     backing: "Licensed payout partners and settlement reserves",
+  },
+  {
+    id: "ctc-stake",
+    name: "Native CTC Nomination",
+    tagline: "Validator delegation on Creditcoin",
+    apy: 0.072,
+    risk: "Balanced",
+    lock: "Anytime",
+    minCusd: 5,
+    description: "Nominate CTC to Creditcoin validators. Deposit or withdraw whenever you want.",
+    backing: "Creditcoin native staking",
+  },
+  {
+    id: "ctc-usdc",
+    name: "CTC / USDC",
+    tagline: "Creditcoin DEX liquidity",
+    apy: 0.186,
+    risk: "Growth",
+    lock: "Anytime",
+    minCusd: 5,
+    description: "Provide CTC / USDC liquidity. Your share earns a live APR, and you can exit anytime.",
+    backing: "Creditcoin DEX pool",
+  },
+  {
+    id: "gcre-eth",
+    name: "g-CRE / ETH",
+    tagline: "Cross-pair DEX liquidity",
+    apy: 0.214,
+    risk: "Growth",
+    lock: "Anytime",
+    minCusd: 5,
+    description: "g-CRE / ETH pool share. Deposit or withdraw anytime.",
+    backing: "Creditcoin DEX pool",
   },
 ];
 
