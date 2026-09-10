@@ -1,6 +1,6 @@
 export type VaultId = "prime" | "notes" | "invoice" | "float";
 export type TrancheId = "standard" | "collateral";
-export type ActivityKind = "tip" | "receive" | "yield" | "loan" | "cashout" | "save" | "stock";
+export type ActivityKind = "tip" | "receive" | "yield" | "loan" | "cashout" | "save" | "stock" | "swap";
 export type ActivityStatus = "complete" | "pending" | "failed";
 
 export type Vault = {

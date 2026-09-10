@@ -1,6 +1,6 @@
 "use client";
 
-import { PieChart, TrendingUp } from "lucide-react";
+import { ArrowLeftRight, PieChart, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DualValue } from "@/components/money/dual-value";
@@ -13,6 +13,7 @@ import { useTickingYield } from "@/hooks/use-ticking-yield";
 import { haptic } from "@/lib/haptic";
 import { VAULTS } from "@/lib/mock/catalog";
 import { MARKET } from "@/lib/mock/stocks";
+import { SWAP_COINS, formatSwapUnits, tokenBalancesUsd } from "@/lib/mock/swap-assets";
 import { useWalletStore, vaultTotal } from "@/stores/wallet-store";
 
 export function AssetsView() {
@@ -20,6 +21,7 @@ export function AssetsView() {
   const hide = useWalletStore((s) => s.hideBalances);
   const vaults = useWalletStore((s) => s.vaults);
   const holdings = useWalletStore((s) => s.holdings) ?? [];
+  const tokens = useWalletStore((s) => s.tokenBalances);
   const { format } = useFiat();
   const yieldNow = useTickingYield();
   const vaultCusd = vaultTotal(vaults);
@@ -27,7 +29,8 @@ export function AssetsView() {
     const asset = MARKET.find((row) => row.symbol === item.symbol);
     return sum + item.shares * (asset?.priceUsd ?? 0);
   }, 0);
-  const totalCusd = vaultCusd + stocksCusd;
+  const swapCusd = tokenBalancesUsd(tokens);
+  const totalCusd = vaultCusd + stocksCusd + swapCusd;
   const openVaults = vaults.filter((item) => item.depositedCusd > 0);
 
   return (
@@ -56,6 +59,37 @@ export function AssetsView() {
         </Card>
 
         <div className="mt-5 flex items-center justify-between">
+          <h2 className="text-base font-bold">Swap balances</h2>
+          <p className="text-sm font-medium text-muted">{hide ? "••••" : format(swapCusd)}</p>
+        </div>
+        <div className="mt-3 space-y-2">
+          {SWAP_COINS.map((asset) => {
+            const held = tokens?.[asset.id] ?? 0;
+            return (
+              <Card key={asset.id} className="flex items-center justify-between p-4">
+                <div>
+                  <p className="text-sm font-bold">{asset.ticker}</p>
+                  <p className="text-xs text-muted">
+                    {asset.name} · {asset.tag}
+                  </p>
+                </div>
+                <p className="text-sm font-bold tabular-nums">
+                  {hide ? "••••" : `${formatSwapUnits(held, asset.id)} ${asset.ticker}`}
+                </p>
+              </Card>
+            );
+          })}
+        </div>
+        <Link
+          href="/swap"
+          onClick={() => haptic("light")}
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-primary"
+        >
+          <ArrowLeftRight className="size-3.5" />
+          Open Swap
+        </Link>
+
+        <div className="mt-6 flex items-center justify-between">
           <h2 className="text-base font-bold">Save</h2>
           <p className="text-sm font-medium text-muted">{hide ? "••••" : format(vaultCusd)}</p>
         </div>

@@ -20,12 +20,10 @@ import { ReceiveDrawer } from "@/components/receive/receive-drawer";
 import { AppHeader } from "@/components/shell/app-header";
 import { StocksDrawer } from "@/components/stocks/stocks-drawer";
 import { Card } from "@/components/ui/card";
-import { useAttest } from "@/hooks/use-attest";
 import { useFiat } from "@/hooks/use-fiat";
 import { useTickingYield } from "@/hooks/use-ticking-yield";
 import { haptic } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
-import { useSessionStore } from "@/stores/session-store";
 import { useWalletStore, vaultTotal } from "@/stores/wallet-store";
 
 const ACTIONS = [
@@ -40,14 +38,12 @@ export function DashboardView() {
   const [stocksOpen, setStocksOpen] = useState(false);
   const [receiveOpen, setReceiveOpen] = useState(false);
   const router = useRouter();
-  const score = useSessionStore((s) => s.creditScore);
   const hide = useWalletStore((s) => s.hideBalances);
   const toggleHide = useWalletStore((s) => s.toggleHide);
   const activeCusd = useWalletStore((s) => s.activeCusd);
   const vaults = useWalletStore((s) => s.vaults);
   const yieldNow = useTickingYield();
   const { format } = useFiat();
-  const attest = useAttest();
   const vaultCusd = vaultTotal(vaults);
   const totalCusd = activeCusd + vaultCusd;
   const shown = pane === "active" ? activeCusd : vaultCusd;
@@ -59,9 +55,6 @@ export function DashboardView() {
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         <StateBanner tone="success" icon={<Sparkles className="size-3.5" />}>
           Earning {(yieldNow.blendedApy * 100).toFixed(1)}% APY in background
-        </StateBanner>
-        <StateBanner tone="neutral">
-          Credit Score: {score} · {attest?.live ? "Verified on Creditcoin" : "Checking Creditcoin…"}
         </StateBanner>
       </div>
 

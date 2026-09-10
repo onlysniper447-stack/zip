@@ -5,6 +5,9 @@ import { persist } from "zustand/middleware";
 import type { ActivityItem, VaultId } from "@/lib/mock/catalog";
 import { SEED_ACTIVITY } from "@/lib/mock/catalog";
 import { createReceiptId } from "@/lib/ids";
+import { DEFAULT_TOKEN_BALANCES, type SwapCoinId, type SwapTokenId } from "@/lib/mock/swap-assets";
+
+export type TokenBalances = Record<SwapCoinId, number>;
 
 export type LoanRecord = {
   principalCusd: number;
@@ -33,6 +36,7 @@ type WalletState = {
   activeCusd: number;
   vaults: VaultPosition[];
   holdings: StockHolding[];
+  tokenBalances: TokenBalances;
   activity: ActivityItem[];
   loan: LoanRecord | null;
   yieldOriginMs: number;
@@ -60,6 +64,14 @@ type WalletState = {
     priceUsd: number;
     receiptId: string;
   }) => void;
+  applySwap: (input: {
+    fromId: SwapTokenId;
+    toId: SwapTokenId;
+    fromAmount: number;
+    toAmount: number;
+    usd: number;
+    receiptId: string;
+  }) => void;
 };
 
 function pushActivity(list: ActivityItem[], item: ActivityItem) {
@@ -77,6 +89,7 @@ export const useWalletStore = create<WalletState>()(
         { id: "notes", depositedCusd: 408.33 },
       ],
       holdings: [{ symbol: "AAPL", shares: 0.42 }],
+      tokenBalances: { ...DEFAULT_TOKEN_BALANCES },
       activity: SEED_ACTIVITY,
       loan: null,
       yieldOriginMs: Date.now(),
@@ -206,6 +219,28 @@ export const useWalletStore = create<WalletState>()(
           }),
         });
       },
+      applySwap: ({ fromId, toId, fromAmount, toAmount, usd, receiptId }) => {
+        const tokens = { ...(get().tokenBalances ?? DEFAULT_TOKEN_BALANCES) };
+        let activeCusd = get().activeCusd;
+        if (fromId === "cash") activeCusd -= usd;
+        else tokens[fromId] = Math.max(0, (tokens[fromId] ?? 0) - fromAmount);
+        if (toId === "cash") activeCusd += usd;
+        else tokens[toId] = (tokens[toId] ?? 0) + toAmount;
+        set({
+          activeCusd,
+          tokenBalances: tokens,
+          activity: pushActivity(get().activity, {
+            id: receiptId,
+            kind: "swap",
+            title: `Swapped ${fromId === "cash" ? "cash" : fromId} → ${toId === "cash" ? "cash" : toId}`,
+            subtitle: "Instant swap · sponsored",
+            amountCusd: 0,
+            at: new Date().toISOString(),
+            receiptId,
+            status: "complete",
+          }),
+        });
+      },
     }),
     {
       name: "zip-wallet",
@@ -214,6 +249,7 @@ export const useWalletStore = create<WalletState>()(
         activeCusd: state.activeCusd,
         vaults: state.vaults,
         holdings: state.holdings ?? [],
+        tokenBalances: state.tokenBalances ?? DEFAULT_TOKEN_BALANCES,
         activity: state.activity,
         loan: state.loan,
       }),
@@ -225,6 +261,7 @@ export const useWalletStore = create<WalletState>()(
           activeCusd: saved.activeCusd ?? current.activeCusd,
           vaults: saved.vaults ?? current.vaults,
           holdings: saved.holdings ?? current.holdings ?? [],
+          tokenBalances: saved.tokenBalances ?? current.tokenBalances ?? DEFAULT_TOKEN_BALANCES,
           activity: saved.activity ?? current.activity,
           loan: saved.loan === undefined ? current.loan : saved.loan,
         };

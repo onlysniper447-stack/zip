@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Home, Mic, PieChart, Wallet, WalletCards } from "lucide-react";
+import { ArrowLeftRight, Home, Mic, PieChart, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { haptic } from "@/lib/haptic";
@@ -10,7 +10,7 @@ import { useUiStore } from "@/stores/ui-store";
 
 const ITEMS = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/activity", label: "Activity", icon: WalletCards },
+  { href: "/swap", label: "Swap", icon: ArrowLeftRight },
   { href: "__voice__", label: "Voice", icon: Mic },
   { href: "/off-ramp", label: "Cash out", icon: Wallet },
   { href: "/assets", label: "Assets", icon: PieChart },

@@ -3,7 +3,7 @@ import type { FiatCode } from "@/lib/money";
 import { planRoute, settleRoute, type PublicSettlement } from "@/lib/payments/engine";
 import { delay } from "@/lib/utils";
 
-export type IntentKind = "tip" | "borrow" | "save" | "withdraw" | "offramp" | "receive" | "stock";
+export type IntentKind = "tip" | "borrow" | "save" | "withdraw" | "offramp" | "receive" | "stock" | "swap";
 
 export type PaymentIntent = {
   kind: IntentKind;

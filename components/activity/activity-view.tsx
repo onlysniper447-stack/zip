@@ -20,6 +20,7 @@ const FILTERS: Array<{ id: "all" | ActivityKind; label: string }> = [
   { id: "loan", label: "Loans" },
   { id: "cashout", label: "Cash out" },
   { id: "stock", label: "Stocks" },
+  { id: "swap", label: "Swaps" },
 ];
 
 export function ActivityView() {
@@ -85,7 +86,11 @@ export function ActivityView() {
                 </div>
                 <div className="text-right">
                   <p className={cn("text-sm font-semibold", item.amountCusd > 0 && "text-yield")}>
-                    {hide ? "••" : format(item.amountCusd, { signed: item.amountCusd > 0 })}
+                    {hide
+                      ? "••"
+                      : item.kind === "swap"
+                        ? "Swapped"
+                        : format(item.amountCusd, { signed: item.amountCusd > 0 })}
                   </p>
                   <Badge>{item.kind}</Badge>
                 </div>
