@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { QrScanner } from "@/components/scan/qr-scanner";
 import { haptic } from "@/lib/haptic";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -31,24 +31,18 @@ export function ScannerOverlay() {
               <X className="size-4" />
             </button>
           </div>
-          <div className="mx-auto mt-16 size-64 rounded-[2rem] border-2 border-primary/80 shadow-[0_0_0_999px_rgba(0,0,0,0.45)]" />
-          <p className="mt-8 text-center text-sm text-muted">
-            Align the code inside the frame. We never show long account strings — just a handle.
-          </p>
-          <div className="mt-auto mb-10 space-y-3">
-            <Button
-              className="w-full"
-              onClick={() => {
+          <div className="mt-8">
+            <QrScanner
+              onPayee={(payee, amount) => {
                 haptic("success");
                 setOpen(false);
-                router.push("/tip?to=tunde");
+                const search = new URLSearchParams();
+                if (payee.kind === "address") search.set("addr", payee.counterparty);
+                else search.set("to", payee.counterparty);
+                if (amount) search.set("amount", amount);
+                router.push(`/tip?${search.toString()}`);
               }}
-            >
-              Use demo code · $tunde
-            </Button>
-            <Button variant="secondary" className="w-full" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
+            />
           </div>
         </motion.div>
       ) : null}

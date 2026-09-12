@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Copy, ScanLine, Share2 } from "lucide-react";
+import { Check, Copy, Share2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useMemo, useState } from "react";
 import { DualValue } from "@/components/money/dual-value";
+import { QrScanner } from "@/components/scan/qr-scanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
@@ -11,54 +12,58 @@ import { useFiat } from "@/hooks/use-fiat";
 import { haptic } from "@/lib/haptic";
 import { createPaymentLink } from "@/lib/ids";
 import { FIAT_CODES, FIAT_META, toCusd, type FiatCode } from "@/lib/money";
+import { type Payee } from "@/lib/payee";
+import { shortAccount } from "@/lib/testnet/wallet";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
+import { useWalletStore } from "@/stores/wallet-store";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onScanned?: (handle: string) => void;
+  onScanned?: (payee: Payee, amount?: string) => void;
 };
 
 export function ReceiveDrawer({ open, onClose, onScanned }: Props) {
   const handle = useSessionStore((s) => s.handle);
+  const chainAddress = useWalletStore((s) => s.chainAddress);
   const { fiat: preferred } = useFiat();
   const [tab, setTab] = useState<"generate" | "scan">("generate");
   const [asset, setAsset] = useState<FiatCode>(preferred);
-  const [seenPreferred, setSeenPreferred] = useState(preferred);
   const [amount, setAmount] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"user" | "wallet" | "link" | null>(null);
   const amountCusd = amount ? toCusd(Number(amount), asset) : 0;
 
-  if (seenPreferred !== preferred) {
-    setSeenPreferred(preferred);
-    setAsset(preferred);
-  }
-
   const link = useMemo(() => {
-    const params: Record<string, string> = { asset: asset.toLowerCase() };
-    if (amount) params.amount = amount;
-    return createPaymentLink(handle, params);
-  }, [amount, asset, handle]);
+    return createPaymentLink(handle, {
+      asset: asset.toLowerCase(),
+      amount,
+      addr: chainAddress ?? "",
+    });
+  }, [amount, asset, handle, chainAddress]);
+
+  async function copy(kind: "user" | "wallet" | "link", value: string) {
+    await navigator.clipboard.writeText(value);
+    haptic("success");
+    setCopied(kind);
+    window.setTimeout(() => setCopied(null), 1200);
+  }
 
   async function share() {
     haptic("light");
     if (navigator.share) {
-      await navigator.share({ title: "Pay me on ZIP", text: `Send money to $${handle}`, url: link });
+      await navigator.share({
+        title: "Pay me on ZIP",
+        text: handle ? `Send money to ${handle}` : "Pay me on ZIP",
+        url: link,
+      });
       return;
     }
-    await navigator.clipboard.writeText(link);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1200);
+    await copy("link", link);
   }
 
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title="Receive"
-      subtitle="Show a code, or scan someone else's."
-    >
+    <Sheet open={open} onClose={onClose} title="Receive" subtitle="Username, wallet, or scan">
       <div className="mb-4 grid grid-cols-2 gap-1 rounded-[16px] bg-canvas p-1">
         {(["generate", "scan"] as const).map((item) => (
           <button
@@ -76,8 +81,11 @@ export function ReceiveDrawer({ open, onClose, onScanned }: Props) {
 
       {tab === "generate" ? (
         <div className="flex flex-col items-center">
-          <p className="mb-3 text-sm font-bold text-foreground">${handle}</p>
-          <div className="rounded-[16px] bg-white p-4">
+          <p className="text-sm font-bold text-foreground">{handle || "ZIP"}</p>
+          {chainAddress ? (
+            <p className="mt-1 font-mono text-xs text-muted">{shortAccount(chainAddress)}</p>
+          ) : null}
+          <div className="mt-3 rounded-[16px] bg-white p-4">
             <QRCodeSVG value={link} size={188} bgColor="#ffffff" fgColor="#0E0C0A" />
           </div>
           <div className="mt-4 grid w-full grid-cols-4 gap-1 rounded-[16px] bg-canvas p-1">
@@ -113,43 +121,32 @@ export function ReceiveDrawer({ open, onClose, onScanned }: Props) {
             <p className="mt-3 text-sm font-medium text-muted">Open amount · payer chooses</p>
           )}
           <div className="mt-4 grid w-full grid-cols-2 gap-3">
-            <Button variant="secondary" onClick={share}>
-              {copied ? <Check className="size-4" /> : <Share2 className="size-4" />}
-              Share link
+            <Button variant="secondary" onClick={() => void share()}>
+              {copied === "link" ? <Check className="size-4" /> : <Share2 className="size-4" />}
+              Share
             </Button>
-            <Button
-              variant="secondary"
-              onClick={async () => {
-                await navigator.clipboard.writeText(`$${handle}`);
-                haptic("success");
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1200);
-              }}
-            >
-              <Copy className="size-4" />
-              Copy $handle
+            <Button variant="secondary" disabled={!handle} onClick={() => void copy("user", handle)}>
+              {copied === "user" ? <Check className="size-4" /> : <Copy className="size-4" />}
+              Username
             </Button>
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center pb-2">
-          <div className="relative mt-2 grid size-56 place-items-center rounded-[24px] border-2 border-primary/80">
-            <ScanLine className="size-10 text-primary" />
-          </div>
-          <p className="mt-5 text-center text-sm font-medium text-muted">
-            Align their ZIP code in the frame. We only show a $handle — never a long account string.
-          </p>
           <Button
-            className="mt-6 w-full"
-            onClick={() => {
-              haptic("success");
-              onClose();
-              onScanned?.("tunde");
-            }}
+            className="mt-3 w-full"
+            variant="secondary"
+            disabled={!chainAddress}
+            onClick={() => chainAddress && void copy("wallet", chainAddress)}
           >
-            Use demo code · $tunde
+            {copied === "wallet" ? <Check className="size-4" /> : <Copy className="size-4" />}
+            Copy wallet
           </Button>
         </div>
+      ) : (
+        <QrScanner
+          onPayee={(payee, nextAmount) => {
+            onClose();
+            onScanned?.(payee, nextAmount);
+          }}
+        />
       )}
     </Sheet>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { zeroAddress, type Address, type Hash, type Hex } from "viem";
+import { getAddress, isAddress, zeroAddress, type Address, type Hash, type Hex } from "viem";
 import type { ExecutionResult, PaymentIntent } from "@/lib/aa/smart-account";
 import { createReceiptId } from "@/lib/ids";
 import { zipHubAbi } from "@/lib/testnet/abi";
@@ -94,6 +94,7 @@ async function attestedResult(hash: Hash, fiat = "NGN"): Promise<ExecutionResult
 }
 
 async function resolvePayee(handle: string): Promise<Address> {
+  if (isAddress(handle)) return getAddress(handle);
   const clean = normalizeHandle(handle);
   const hub = hubAddress();
   if (hub) {

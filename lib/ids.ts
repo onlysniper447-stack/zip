@@ -14,8 +14,13 @@ export function createReceiptId() {
 
 export function createPaymentLink(handle: string, params?: Record<string, string>) {
   const search = new URLSearchParams();
-  search.set("to", handle.replace(/^\$/, "").toLowerCase());
-  if (params?.amount) search.set("amount", params.amount);
+  const username = handle.replace(/^[@$]/, "").toLowerCase();
+  if (username) search.set("to", username);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value) search.set(key, value);
+    }
+  }
   const path = `/tip?${search.toString()}`;
   if (typeof window !== "undefined") {
     return `${window.location.origin}${path}`;

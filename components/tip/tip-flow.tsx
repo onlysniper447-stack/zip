@@ -1,11 +1,12 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, Wallet } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { SlideToConfirm } from "@/components/confirm/slide-to-confirm";
 import { PageHeader } from "@/components/flow/page-header";
 import { DualValue } from "@/components/money/dual-value";
+import { QrScanner } from "@/components/scan/qr-scanner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,39 +16,39 @@ import { executeIntent } from "@/lib/aa/smart-account";
 import { haptic } from "@/lib/haptic";
 import { CONTACTS, STICKERS } from "@/lib/mock/catalog";
 import { formatFiat } from "@/lib/money";
+import { parsePayee, type Payee } from "@/lib/payee";
 import { initials } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 import { useWalletStore } from "@/stores/wallet-store";
 
+type Method = "username" | "address" | "scan";
+
 export function TipFlow() {
   const params = useSearchParams();
   const router = useRouter();
-  const preset = params.get("to")?.replace(/^\$/, "").toLowerCase() ?? null;
+  const presetTo = params.get("to")?.replace(/^[@$]/, "").toLowerCase() ?? null;
+  const presetAddr = params.get("addr");
   const amountParam = params.get("amount");
   const { fiat, symbol, toUsd, defaultAmount, chips, railCopy } = useFiat();
-  const [query, setQuery] = useState(preset ? `$${preset}` : "");
-  const [selected, setSelected] = useState(() => CONTACTS.find((c) => c.handle === preset) ?? null);
+  const [method, setMethod] = useState<Method>(presetAddr ? "address" : "username");
+  const [query, setQuery] = useState(presetTo ? presetTo : "");
+  const [address, setAddress] = useState(presetAddr ?? "");
+  const [selected, setSelected] = useState<Payee | null>(() => parsePayee(presetAddr || presetTo || ""));
   const [amount, setAmount] = useState(() => {
     const parsed = amountParam ? Number(amountParam) : NaN;
     return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultAmount(10);
   });
-  const [amountFiat, setAmountFiat] = useState(fiat);
   const [memo, setMemo] = useState("");
   const [sticker, setSticker] = useState<string | undefined>();
-  const [open, setOpen] = useState(Boolean(preset));
+  const [open, setOpen] = useState(Boolean(presetTo || presetAddr));
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const activeCusd = useWalletStore((s) => s.activeCusd);
   const applyTip = useWalletStore((s) => s.applyTip);
   const openReceipt = useUiStore((s) => s.openReceipt);
 
-  if (amountFiat !== fiat) {
-    setAmountFiat(fiat);
-    const parsed = amountParam ? Number(amountParam) : NaN;
-    setAmount(Number.isFinite(parsed) && parsed > 0 ? parsed : defaultAmount(10));
-  }
-
   const matches = useMemo(() => {
-    const q = query.replace(/^\$/, "").toLowerCase();
+    const q = query.replace(/^[@$]/, "").toLowerCase();
     if (!q) return CONTACTS;
     return CONTACTS.filter(
       (c) =>
@@ -59,11 +60,22 @@ export function TipFlow() {
 
   const amountCusd = toUsd(amount);
   const needsSlide = amountCusd >= 33;
-  const canSend = selected && amountCusd > 0 && amountCusd <= activeCusd && !sending;
+  const canSend = Boolean(selected) && amountCusd > 0 && amountCusd <= activeCusd && !sending;
+
+  function choose(payee: Payee, nextAmount?: string) {
+    setSelected(payee);
+    setOpen(true);
+    if (nextAmount) {
+      const parsed = Number(nextAmount);
+      if (Number.isFinite(parsed) && parsed > 0) setAmount(parsed);
+    }
+    haptic("light");
+  }
 
   async function send() {
     if (!selected || !canSend) return;
     setSending(true);
+    setSendError(null);
     haptic("medium");
     try {
       const result = await executeIntent({
@@ -71,17 +83,22 @@ export function TipFlow() {
         amountCusd,
         sourceFiat: fiat,
         destFiat: fiat,
-        counterparty: selected.handle,
+        counterparty: selected.counterparty,
         memo,
         sticker,
       });
-      applyTip({ to: selected.handle, amountCusd, memo: [sticker, memo].filter(Boolean).join(" "), receiptId: result.receiptId });
+      applyTip({
+        to: selected.label,
+        amountCusd,
+        memo: [sticker, memo].filter(Boolean).join(" "),
+        receiptId: result.receiptId,
+      });
       setOpen(false);
       openReceipt({
-        title: `Sent to $${selected.handle}`,
-        subtitle: memo || "Instant payment",
+        title: `Sent to ${selected.label}`,
+        subtitle: memo || (selected.kind === "address" ? "ZIP Wallet" : "Instant payment"),
         amountCusd: -amountCusd,
-        counterparty: `$${selected.handle}`,
+        counterparty: selected.label,
         memo: memo || undefined,
         receiptId: result.receiptId,
         railLabel: result.railName,
@@ -89,6 +106,8 @@ export function TipFlow() {
         explorerUrl: result.explorerUrl,
       });
       router.push("/");
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : "Couldn’t send. Try again.");
     } finally {
       setSending(false);
     }
@@ -96,50 +115,109 @@ export function TipFlow() {
 
   return (
     <div>
-      <PageHeader title="Tip" subtitle="Search a $handle, contact, or scan" />
+      <PageHeader title="Tip" subtitle="Username, wallet address, or scan" />
       <div className="px-5 pb-8">
-        <div className="relative">
-          <Search className="absolute left-3 top-3.5 size-4 text-muted" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="$handle, name, or phone"
-            className="pl-10"
-          />
-        </div>
-        <p className="mt-2 text-xs text-muted">They receive {symbol} in their local account. No extra fees.</p>
-
-        <div className="mt-4 space-y-2">
-          {matches.map((contact) => (
+        <div className="mb-4 grid grid-cols-3 gap-1 rounded-[16px] bg-canvas p-1">
+          {(
+            [
+              { id: "username", label: "Username" },
+              { id: "address", label: "Wallet" },
+              { id: "scan", label: "Scan" },
+            ] as const
+          ).map((item) => (
             <button
-              key={contact.handle}
-              onClick={() => {
-                haptic("light");
-                setSelected(contact);
-                setOpen(true);
-              }}
-              className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left hover:border-primary"
+              key={item.id}
+              onClick={() => setMethod(item.id)}
+              className={`rounded-[12px] py-2.5 text-sm font-bold ${
+                method === item.id ? "bg-primary text-on-accent" : "text-muted"
+              }`}
             >
-              <span className="grid size-11 place-items-center rounded-2xl bg-[rgba(217,119,6,0.15)] text-sm font-semibold text-foreground">
-                {initials(contact.name)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">{contact.name}</span>
-                <span className="block truncate text-xs text-muted">
-                  ${contact.handle} · {contact.phone}
-                </span>
-              </span>
-              {contact.lastPaid ? <span className="text-[11px] text-muted">{contact.lastPaid}</span> : null}
+              {item.label}
             </button>
           ))}
         </div>
+
+        {method === "username" ? (
+          <>
+            <div className="relative">
+              <Search className="absolute left-3 top-3.5 size-4 text-muted" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Username or name"
+                className="pl-10"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const payee = parsePayee(query);
+                    if (payee) choose(payee);
+                  }
+                }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-muted">They receive {symbol}. No extra fees.</p>
+            {parsePayee(query) && !matches.some((c) => c.handle === parsePayee(query)?.counterparty) ? (
+              <Button className="mt-3 w-full" variant="secondary" onClick={() => choose(parsePayee(query)!)}>
+                Continue with {parsePayee(query)!.label}
+              </Button>
+            ) : null}
+            <div className="mt-4 space-y-2">
+              {matches.map((contact) => (
+                <button
+                  key={contact.handle}
+                  onClick={() => choose(parsePayee(contact.handle)!)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-3 text-left hover:border-primary"
+                >
+                  <span className="grid size-11 place-items-center rounded-2xl bg-[rgba(217,119,6,0.15)] text-sm font-semibold text-foreground">
+                    {initials(contact.name)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">{contact.name}</span>
+                    <span className="block truncate text-xs text-muted">{contact.handle}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        {method === "address" ? (
+          <div className="space-y-3">
+            <div className="relative">
+              <Wallet className="absolute left-3 top-3.5 size-4 text-muted" />
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="0x…"
+                className="pl-10 font-mono text-sm"
+              />
+            </div>
+            <p className="text-xs text-muted">Paste a Creditcoin / ZIP Wallet address.</p>
+            <Button
+              className="w-full"
+              disabled={!parsePayee(address)}
+              onClick={() => {
+                const payee = parsePayee(address);
+                if (payee) choose(payee);
+              }}
+            >
+              Continue
+            </Button>
+          </div>
+        ) : null}
+
+        {method === "scan" ? (
+          <QrScanner
+            onPayee={(payee, nextAmount) => choose(payee, nextAmount)}
+            hint="Scan a ZIP code, or paste a username / wallet."
+          />
+        ) : null}
       </div>
 
       <Sheet
         open={open}
         onClose={() => setOpen(false)}
         title={selected ? `Tip ${selected.name}` : "Tip"}
-        subtitle={selected ? `$${selected.handle}` : undefined}
+        subtitle={selected?.label}
       >
         <div className="space-y-4">
           <Card className="text-center">
@@ -185,11 +263,10 @@ export function TipFlow() {
           </div>
 
           <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Add a memo (optional)" />
-
           <div className="rounded-2xl border border-[rgba(217,119,6,0.3)] bg-[rgba(217,119,6,0.15)] px-3 py-2 text-xs text-[#F59E0B]">
             Clears via {railCopy}
           </div>
-
+          {sendError ? <p className="text-sm font-medium text-danger">{sendError}</p> : null}
           {needsSlide ? (
             <SlideToConfirm
               label={`Slide to send ${formatFiat(amount, fiat)}`}
@@ -198,7 +275,7 @@ export function TipFlow() {
               onConfirm={send}
             />
           ) : (
-            <Button className="w-full" size="lg" disabled={!canSend} onClick={send}>
+            <Button className="w-full" size="lg" disabled={!canSend} onClick={() => void send()}>
               Send {formatFiat(amount, fiat)}
             </Button>
           )}

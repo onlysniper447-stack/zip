@@ -168,7 +168,13 @@ export function DashboardView() {
       <ReceiveDrawer
         open={receiveOpen}
         onClose={() => setReceiveOpen(false)}
-        onScanned={(handle) => router.push(`/tip?to=${handle}`)}
+        onScanned={(payee, amount) => {
+          const search = new URLSearchParams();
+          if (payee.kind === "address") search.set("addr", payee.counterparty);
+          else search.set("to", payee.counterparty);
+          if (amount) search.set("amount", amount);
+          router.push(`/tip?${search.toString()}`);
+        }}
       />
     </div>
   );
