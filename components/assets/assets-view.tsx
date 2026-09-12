@@ -3,6 +3,7 @@
 import { ArrowLeftRight, PieChart, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { EmbeddedWallet } from "@/components/assets/embedded-wallet";
 import { DualValue } from "@/components/money/dual-value";
 import { StocksDrawer } from "@/components/stocks/stocks-drawer";
 import { Badge } from "@/components/ui/badge";
@@ -42,13 +43,15 @@ export function AssetsView() {
           </span>
           <div>
             <h1 className="text-lg font-semibold leading-none">Assets</h1>
-            <p className="mt-1 text-xs text-muted">Vaults and holdings</p>
+            <p className="mt-1 text-xs text-muted">Wallet, vaults, and holdings</p>
           </div>
         </div>
       </header>
 
       <div className="px-5 pb-8">
-        <Card className="bg-[radial-gradient(120%_80%_at_100%_0%,rgba(217,119,6,0.18),transparent_50%),#1A1612]">
+        <EmbeddedWallet />
+
+        <Card className="mt-4 bg-[radial-gradient(120%_80%_at_100%_0%,rgba(217,119,6,0.18),transparent_50%),#1A1612]">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted">Portfolio</p>
           <div className="mt-2">
             <DualValue amountCusd={totalCusd} size="lg" masked={hide} />

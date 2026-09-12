@@ -8,7 +8,6 @@ import { initials } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 
 export function AppHeader() {
-  const handle = useSessionStore((s) => s.handle);
   const displayName = useSessionStore((s) => s.displayName);
   const score = useSessionStore((s) => s.creditScore);
 
@@ -19,13 +18,10 @@ export function AppHeader() {
         <Link
           href="/profile"
           onClick={() => haptic("light")}
-          className="flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-3"
-          aria-label={`You, $${handle}`}
+          className="grid size-10 place-items-center rounded-full border border-line bg-surface text-[11px] font-bold text-foreground"
+          aria-label="You"
         >
-          <span className="grid size-8 place-items-center rounded-full bg-primary/20 text-[11px] font-bold text-foreground">
-            {initials(displayName || handle || "You")}
-          </span>
-          <span className="text-xs font-bold text-foreground">${handle}</span>
+          {initials(displayName || "You")}
         </Link>
         <Link
           href="/profile"
