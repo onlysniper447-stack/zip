@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Fingerprint, Lock, ShieldCheck, Smartphone, Wallet } from "lucide-react";
+import { ArrowLeft, Fingerprint, Lock, Smartphone, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { PinBoxes } from "@/components/auth/pin-boxes";
@@ -113,24 +113,6 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
             <p className="mt-4 max-w-[20rem] text-sm leading-6 text-muted">
               Pay, save, and borrow without leaving the app. Your ZIP Wallet is created on this device.
             </p>
-
-            <div className="mt-8 space-y-2">
-              {[
-                { icon: Wallet, label: "Built-in wallet" },
-                { icon: Fingerprint, label: "Face ID / passkey" },
-                { icon: ShieldCheck, label: "Verified on Creditcoin" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 rounded-2xl border border-line bg-surface/80 px-3 py-2.5"
-                >
-                  <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
-                    <item.icon className="size-4" />
-                  </span>
-                  <p className="text-sm font-semibold">{item.label}</p>
-                </div>
-              ))}
-            </div>
 
             <div className="mt-auto space-y-3 pt-10">
               <Button className="w-full" size="lg" onClick={() => setScreen("signup")}>
