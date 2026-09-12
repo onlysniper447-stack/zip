@@ -50,3 +50,18 @@ export function findAccount(input: { phone?: string; email?: string }) {
     ) ?? null
   );
 }
+
+export function updatePin(phone: string, current: string, next: string) {
+  const account = findAccount({ phone });
+  if (!account) return { ok: false as const, error: "No ZIP account on this device." };
+  if (account.pin !== current) return { ok: false as const, error: "Current PIN doesn’t match." };
+  if (!/^\d{6}$/.test(next)) return { ok: false as const, error: "New PIN must be 6 digits." };
+  saveAccount({ ...account, pin: next });
+  return { ok: true as const };
+}
+
+export function verifyPin(phone: string, pin: string) {
+  const account = findAccount({ phone });
+  if (!account) return false;
+  return account.pin === pin;
+}

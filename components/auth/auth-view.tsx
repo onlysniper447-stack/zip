@@ -3,7 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Fingerprint, Lock, ShieldCheck, Smartphone, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { PinBoxes } from "@/components/auth/pin-boxes";
 import { ZipMark } from "@/components/brand/zip-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,52 +12,9 @@ import { findAccount, handleFromName, saveAccount } from "@/lib/auth/local-accou
 import { createPasskey } from "@/lib/aa/smart-account";
 import { haptic } from "@/lib/haptic";
 import { fadeUp, springSoft } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 
 type Screen = "welcome" | "login" | "signup" | "passkey";
-
-function PinBoxes({
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  value: string;
-  onChange: (next: string) => void;
-  ariaLabel: string;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  return (
-    <div>
-      <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-muted">{ariaLabel}</label>
-      <input
-        ref={inputRef}
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={6}
-        value={value}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
-        className="sr-only"
-        aria-label={ariaLabel}
-      />
-      <div className="grid grid-cols-6 gap-2">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => inputRef.current?.focus()}
-            className={cn(
-              "grid h-12 place-items-center rounded-2xl border bg-white/4 text-lg font-bold",
-              value.length === index ? "border-primary" : "border-line",
-            )}
-          >
-            {value[index] ? "•" : ""}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function AuthView({ start = "welcome" }: { start?: Screen }) {
   const router = useRouter();

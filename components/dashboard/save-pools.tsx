@@ -139,7 +139,7 @@ export function SavePools({
           </div>
         ))}
       </div>
-      <Link href="/assets" className="inline-block text-sm font-bold text-primary">
+      <Link href="/settings/holdings" className="inline-block text-sm font-bold text-primary">
         View Assets
       </Link>
 

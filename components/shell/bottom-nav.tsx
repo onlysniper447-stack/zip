@@ -13,7 +13,7 @@ const ITEMS = [
   { href: "/swap", label: "Swap", icon: ArrowLeftRight },
   { href: "__voice__", label: "Voice", icon: Mic },
   { href: "/off-ramp", label: "Cash out", icon: Wallet },
-  { href: "/assets", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function BottomNav() {
@@ -28,7 +28,8 @@ export function BottomNav() {
         {ITEMS.map((item) => {
           const active =
             item.href !== "__voice__" &&
-            (pathname === item.href || (item.href === "/assets" && pathname === "/save"));
+            (pathname === item.href ||
+              (item.href === "/settings" && (pathname.startsWith("/settings") || pathname === "/save")));
           const Icon = item.icon;
           if (item.href === "__voice__") {
             return (

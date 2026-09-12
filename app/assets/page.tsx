@@ -1,5 +1,5 @@
-import { AssetsView } from "@/components/assets/assets-view";
+import { redirect } from "next/navigation";
 
 export default function AssetsPage() {
-  return <AssetsView />;
+  redirect("/settings");
 }
