@@ -58,11 +58,13 @@ ZIP accounts are real EVM wallets on **Creditcoin Testnet (chain 102031)**. Tip,
 3. Set on Vercel / `.env.local`:
    ```
    ZIP_OPERATOR_PRIVATE_KEY=0x…
-   NEXT_PUBLIC_ZIP_HUB=0x…   # printed by the deploy script
+   NEXT_PUBLIC_ZIP_HUB=0x9Bf92014097B30E26E16273b2DeCdD3C60195a42
    CREDITCOIN_RPC_URL=https://rpc.cc3-testnet.creditcoin.network
    ```
 
-Until the hub is deployed, tips still send native tCTC. Save / Swap / Borrow need the hub. Each device gets its own ZIP account; Profile → **Get testnet cash** drips from the operator.
+**ZipHub (Creditcoin Testnet):** [0x9Bf92014097B30E26E16273b2DeCdD3C60195a42](https://creditcoin-testnet.blockscout.com/address/0x9Bf92014097B30E26E16273b2DeCdD3C60195a42)
+
+Each device gets its own ZIP account. Profile → **Get testnet cash** drips from the operator.
 
 ## Deploy
 

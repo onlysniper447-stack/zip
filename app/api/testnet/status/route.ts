@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const hub = hubAddress();
-  const key = process.env.ZIP_OPERATOR_PRIVATE_KEY;
+  const rawKey = process.env.ZIP_OPERATOR_PRIVATE_KEY?.trim() ?? "";
+  const key = rawKey.startsWith("0x") ? rawKey : rawKey ? `0x${rawKey}` : "";
   const expected = process.env.ZIP_OPERATOR_PUBLIC_ADDRESS?.trim();
   const derived = key && /^0x[a-fA-F0-9]{64}$/.test(key) ? privateKeyToAccount(key as `0x${string}`) : null;
   if (expected && derived && expected.toLowerCase() !== derived.address.toLowerCase()) {

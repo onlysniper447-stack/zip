@@ -14,8 +14,10 @@ export const TESTNET_CTC_USD = 1;
 
 export const GAS_RESERVE_CTC = 0.003;
 
+const DEFAULT_HUB = "0x9Bf92014097B30E26E16273b2DeCdD3C60195a42" as Address;
+
 export function hubAddress(): Address | null {
-  const value = process.env.NEXT_PUBLIC_ZIP_HUB?.trim();
+  const value = process.env.NEXT_PUBLIC_ZIP_HUB?.trim() || DEFAULT_HUB;
   if (value && /^0x[a-fA-F0-9]{40}$/.test(value)) return value as Address;
   return null;
 }

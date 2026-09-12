@@ -11,8 +11,9 @@ const SKIP_IF = parseEther("2");
 const OPERATOR_RESERVE = parseEther("0.5");
 
 function operatorAccount() {
-  const key = process.env.ZIP_OPERATOR_PRIVATE_KEY;
-  if (!key || !/^0x[a-fA-F0-9]{64}$/.test(key)) return null;
+  const raw = process.env.ZIP_OPERATOR_PRIVATE_KEY?.trim() ?? "";
+  const key = raw.startsWith("0x") ? raw : raw ? `0x${raw}` : "";
+  if (!/^0x[a-fA-F0-9]{64}$/.test(key)) return null;
   const account = privateKeyToAccount(key as `0x${string}`);
   const expected = process.env.ZIP_OPERATOR_PUBLIC_ADDRESS?.trim();
   if (expected && expected.toLowerCase() !== account.address.toLowerCase()) {
