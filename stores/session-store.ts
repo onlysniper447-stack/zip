@@ -9,11 +9,12 @@ export type SessionState = {
   handle: string;
   displayName: string;
   phone: string;
+  email: string;
   creditScore: number;
   passkeyBound: boolean;
   preferredFiat: FiatCode;
   setPreferredFiat: (fiat: FiatCode) => void;
-  completeOnboarding: (input: { handle: string; displayName: string; phone: string }) => void;
+  completeOnboarding: (input: { handle: string; displayName: string; phone: string; email?: string }) => void;
   signOut: voidFn;
 };
 
@@ -22,21 +23,24 @@ type voidFn = () => void;
 export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({
-      onboarded: true,
-      handle: "ada",
-      displayName: "Adaeze Okonkwo",
-      phone: "+234 803 441 2291",
-      creditScore: 720,
-      passkeyBound: true,
+      onboarded: false,
+      handle: "",
+      displayName: "",
+      phone: "",
+      email: "",
+      creditScore: 580,
+      passkeyBound: false,
       preferredFiat: "NGN",
       setPreferredFiat: (preferredFiat) => set({ preferredFiat }),
-      completeOnboarding: ({ handle, displayName, phone }) =>
+      completeOnboarding: ({ handle, displayName, phone, email }) =>
         set({
           onboarded: true,
           handle: handle.replace(/^\$/, "").toLowerCase(),
           displayName,
           phone,
+          email: email?.trim() ?? "",
           passkeyBound: true,
+          creditScore: 720,
         }),
       signOut: () =>
         set({
@@ -44,10 +48,11 @@ export const useSessionStore = create<SessionState>()(
           handle: "",
           displayName: "",
           phone: "",
+          email: "",
           passkeyBound: false,
           creditScore: 580,
         }),
     }),
-    { name: "zip-session" },
+    { name: "zip-session-auth" },
   ),
 );

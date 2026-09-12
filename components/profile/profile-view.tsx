@@ -12,10 +12,12 @@ import { useAttest } from "@/hooks/use-attest";
 import { CREDIT_BUREAU_LABEL } from "@/lib/creditcoin";
 import { FIAT_META } from "@/lib/money";
 import { LOCAL_ACCOUNTS, accountLabel } from "@/lib/payments/rails";
+import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/stores/session-store";
 
 export function ProfileView() {
   const session = useSessionStore();
+  const router = useRouter();
   const fiat = session.preferredFiat ?? "NGN";
   const meta = FIAT_META[fiat];
   const linked = LOCAL_ACCOUNTS[fiat].find((item) => item.kind === "bank") ?? LOCAL_ACCOUNTS[fiat][0];
@@ -80,7 +82,14 @@ export function ProfileView() {
           How ZIP is verified
         </Link>
 
-        <Button variant="secondary" className="mt-5 w-full" onClick={session.signOut}>
+        <Button
+          variant="secondary"
+          className="mt-5 w-full"
+          onClick={() => {
+            session.signOut();
+            router.replace("/login");
+          }}
+        >
           Sign out
         </Button>
       </div>

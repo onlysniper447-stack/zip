@@ -1,5 +1,5 @@
-import { OnboardingView } from "@/components/onboarding/onboarding-view";
+import { AuthView } from "@/components/auth/auth-view";
 
 export default function OnboardingPage() {
-  return <OnboardingView />;
+  return <AuthView />;
 }

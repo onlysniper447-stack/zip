@@ -32,9 +32,14 @@ export function useChainSync() {
   const hydrate = useWalletStore((s) => s.hydrateFromChain);
   const setLiveError = useWalletStore((s) => s.setLiveError);
   const handle = useSessionStore((s) => s.handle);
+  const onboarded = useSessionStore((s) => s.onboarded);
   const started = useRef(false);
 
   useEffect(() => {
+    if (!onboarded) {
+      started.current = false;
+      return;
+    }
     if (started.current) return;
     started.current = true;
     let cancelled = false;
@@ -76,5 +81,5 @@ export function useChainSync() {
       window.removeEventListener("zip-chain-refresh", onRefresh);
       window.clearInterval(timer);
     };
-  }, [handle, hydrate, setLiveError]);
+  }, [onboarded, handle, hydrate, setLiveError]);
 }

@@ -9,11 +9,14 @@ import { useChainSync } from "@/hooks/use-chain-sync";
 import { useSessionStore } from "@/stores/session-store";
 import { useWalletStore } from "@/stores/wallet-store";
 
+const AUTH_PATHS = new Set(["/onboarding", "/login", "/signup"]);
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const onboarded = useSessionStore((s) => s.onboarded);
   const boot = useWalletStore((s) => s.boot);
+  const isAuth = AUTH_PATHS.has(pathname);
   useChainSync();
 
   useEffect(() => {
@@ -21,20 +24,27 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [boot]);
 
   useEffect(() => {
-    if (!onboarded && pathname !== "/onboarding" && pathname !== "/docs") {
+    if (!onboarded && !isAuth && pathname !== "/docs") {
       router.replace("/onboarding");
     }
-  }, [onboarded, pathname, router]);
+    if (onboarded && isAuth) {
+      router.replace("/");
+    }
+  }, [onboarded, isAuth, pathname, router]);
 
   return (
     <div className="min-h-dvh bg-canvas lg:flex lg:items-center lg:justify-center lg:p-8">
       <div className="zip-frame relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-foreground lg:min-h-[860px] lg:rounded-[2.4rem] lg:border lg:border-line lg:shadow-[0_40px_120px_rgba(14,12,10,0.55)]">
         <div className="pointer-events-none absolute inset-x-12 top-0 z-20 mx-auto hidden h-6 rounded-b-2xl bg-black/40 lg:block" />
         <div className="relative flex min-h-dvh flex-1 flex-col lg:min-h-[860px]">
-          <main className="flex-1 overflow-y-auto pb-28">{children}</main>
-          <BottomNav />
-          <ReceiptDrawer />
-          <VoiceAIDrawer />
+          <main className={isAuth ? "flex-1 overflow-y-auto" : "flex-1 overflow-y-auto pb-28"}>{children}</main>
+          {isAuth ? null : (
+            <>
+              <BottomNav />
+              <ReceiptDrawer />
+              <VoiceAIDrawer />
+            </>
+          )}
         </div>
       </div>
     </div>
