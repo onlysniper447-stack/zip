@@ -9,7 +9,20 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const hub = hubAddress();
   const key = process.env.ZIP_OPERATOR_PRIVATE_KEY;
-  const operator = key && /^0x[a-fA-F0-9]{64}$/.test(key) ? privateKeyToAccount(key as `0x${string}`) : null;
+  const expected = process.env.ZIP_OPERATOR_PUBLIC_ADDRESS?.trim();
+  const derived = key && /^0x[a-fA-F0-9]{64}$/.test(key) ? privateKeyToAccount(key as `0x${string}`) : null;
+  if (expected && derived && expected.toLowerCase() !== derived.address.toLowerCase()) {
+    return NextResponse.json(
+      {
+        live: false,
+        chainId: TESTNET_CHAIN_ID,
+        error: "Operator key does not match ZIP_OPERATOR_PUBLIC_ADDRESS",
+        operator: expected,
+      },
+      { status: 500 },
+    );
+  }
+  const operator = derived;
   let operatorBalance: string | null = null;
   let hubBalance: string | null = null;
   let blockNumber: string | null = null;

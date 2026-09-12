@@ -13,7 +13,12 @@ const OPERATOR_RESERVE = parseEther("0.5");
 function operatorAccount() {
   const key = process.env.ZIP_OPERATOR_PRIVATE_KEY;
   if (!key || !/^0x[a-fA-F0-9]{64}$/.test(key)) return null;
-  return privateKeyToAccount(key as `0x${string}`);
+  const account = privateKeyToAccount(key as `0x${string}`);
+  const expected = process.env.ZIP_OPERATOR_PUBLIC_ADDRESS?.trim();
+  if (expected && expected.toLowerCase() !== account.address.toLowerCase()) {
+    throw new Error("ZIP_OPERATOR_PRIVATE_KEY does not match ZIP_OPERATOR_PUBLIC_ADDRESS");
+  }
+  return account;
 }
 
 export async function POST(request: Request) {
@@ -26,7 +31,15 @@ export async function POST(request: Request) {
   if (!body.address || !isAddress(body.address)) {
     return NextResponse.json({ error: "Account is required" }, { status: 400 });
   }
-  const operator = operatorAccount();
+  let operator;
+  try {
+    operator = operatorAccount();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Operator key mismatch" },
+      { status: 500 },
+    );
+  }
   if (!operator) {
     return NextResponse.json(
       { error: "Testnet top-up is not configured yet.", faucet: "https://docs.creditcoin.org/wallets/using-testnet-faucet" },

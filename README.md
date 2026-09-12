@@ -50,7 +50,7 @@ Demo session starts signed in as `$ada`. Sign out from **You** to replay passkey
 ZIP accounts are real EVM wallets on **Creditcoin Testnet (chain 102031)**. Tip, Save, Swap, Borrow, and Cash out submit transactions to `ZipHub`.
 
 1. Fund the operator (in-app faucet + hub deploy) with tCTC from the [Creditcoin Discord faucet](https://docs.creditcoin.org/wallets/using-testnet-faucet):
-   `0x2DF8e669e32E78df4BaB5b0f5F1E061759cDC6C9`
+   `0x2408451D0A36b23132dAc1489a9c5dC821aa7C40`
 2. Deploy the hub:
    ```bash
    npm run deploy:hub
