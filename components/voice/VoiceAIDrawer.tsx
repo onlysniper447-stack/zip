@@ -131,6 +131,7 @@ export function VoiceAIDrawer() {
     setPhase("executing");
     haptic("medium");
     let lastReceipt = "";
+    let lastExplorer: string | undefined;
     try {
       for (const intent of intents) {
         const amountCusd = intentUsd(intent);
@@ -144,6 +145,7 @@ export function VoiceAIDrawer() {
           });
           applyTip({ to: intent.handle, amountCusd, memo: "VoiceAI", receiptId: result.receiptId });
           lastReceipt = result.receiptId;
+          lastExplorer = result.explorerUrl;
         } else if (intent.kind === "save") {
           const result = await executeIntent({
             kind: "save",
@@ -154,6 +156,7 @@ export function VoiceAIDrawer() {
           });
           applySave("prime", amountCusd, result.receiptId);
           lastReceipt = result.receiptId;
+          lastExplorer = result.explorerUrl;
         } else if (intent.kind === "cashout") {
           const result = await executeIntent({
             kind: "offramp",
@@ -164,6 +167,7 @@ export function VoiceAIDrawer() {
           });
           applyOfframp({ amountCusd, destination: payoutLabel, receiptId: result.receiptId });
           lastReceipt = result.receiptId;
+          lastExplorer = result.explorerUrl;
         } else {
           const asset = MARKET.find((item) => item.symbol === intent.symbol);
           const priceUsd = asset?.priceUsd ?? 99.48;
@@ -183,6 +187,7 @@ export function VoiceAIDrawer() {
             receiptId: result.receiptId,
           });
           lastReceipt = result.receiptId;
+          lastExplorer = result.explorerUrl;
         }
       }
       setPhase("done");
@@ -194,8 +199,9 @@ export function VoiceAIDrawer() {
         amountCusd: -totalUsd,
         memo: transcript,
         receiptId: lastReceipt,
-        networkFeeLabel: "Sponsored · no extra fee",
+        networkFeeLabel: "Included on ZIP Network",
         verifiedLabel: lastReceipt ? "Cross-chain verified" : undefined,
+        explorerUrl: lastExplorer,
       });
     } catch {
       setPhase("confirm");

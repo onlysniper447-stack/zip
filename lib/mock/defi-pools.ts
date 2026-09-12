@@ -18,14 +18,14 @@ export type DefiPool = {
   live?: boolean;
 };
 
-function allocated(vaults: Array<{ id: string; depositedCusd: number }>, id: string, fallback: number) {
+function allocated(vaults: Array<{ id: string; depositedCusd: number }>, id: string, fallback = 0) {
   return vaults.find((item) => item.id === id)?.depositedCusd ?? fallback;
 }
 
 export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: number }>, tick = 0): DefiPool[] {
   const drift = ((tick % 17) - 8) * 0.0004;
-  const ctcUsdc = allocated(vaults, "ctc-usdc", 180);
-  const gcreEth = allocated(vaults, "gcre-eth", 96);
+  const ctcUsdc = allocated(vaults, "ctc-usdc");
+  const gcreEth = allocated(vaults, "gcre-eth");
 
   return [
     {
@@ -39,7 +39,7 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "staking",
       protocol: "Creditcoin",
       detail: "Validator delegation",
-      allocatedCusd: allocated(vaults, "ctc-stake", 240),
+      allocatedCusd: allocated(vaults, "ctc-stake"),
     },
     {
       id: "prime",
@@ -52,7 +52,7 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "rwa",
       protocol: "Creditcoin",
       detail: "Emerging-markets credit pool",
-      allocatedCusd: allocated(vaults, "prime", 900),
+      allocatedCusd: allocated(vaults, "prime"),
     },
     {
       id: "notes",
@@ -65,7 +65,7 @@ export function creditcoinPools(vaults: Array<{ id: string; depositedCusd: numbe
       kind: "notes",
       protocol: "Creditcoin",
       detail: "Fixed-income notes",
-      allocatedCusd: allocated(vaults, "notes", 408.33),
+      allocatedCusd: allocated(vaults, "notes"),
     },
     {
       id: "ctc-usdc",

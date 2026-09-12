@@ -2,6 +2,7 @@ import { createReceiptId } from "@/lib/ids";
 import type { FiatCode } from "@/lib/money";
 import { planRoute, settleRoute, type PublicSettlement } from "@/lib/payments/engine";
 import { delay } from "@/lib/utils";
+import type { SwapTokenId } from "@/lib/mock/swap-assets";
 
 export type IntentKind = "tip" | "borrow" | "save" | "withdraw" | "offramp" | "receive" | "stock" | "swap";
 
@@ -13,6 +14,10 @@ export type PaymentIntent = {
   counterparty?: string;
   memo?: string;
   sticker?: string;
+  units?: number;
+  fromToken?: SwapTokenId;
+  toToken?: SwapTokenId;
+  side?: "buy" | "sell";
 };
 
 export type ExecutionResult = PublicSettlement & {
@@ -20,6 +25,8 @@ export type ExecutionResult = PublicSettlement & {
   networkFeeUsd: 0;
   attested: boolean;
   verifiedLabel: string;
+  txHash?: string;
+  explorerUrl?: string;
 };
 
 function corridorFor(kind: IntentKind) {
@@ -43,34 +50,16 @@ async function settleLocal(intent: PaymentIntent): Promise<ExecutionResult> {
 }
 
 /**
- * UI-facing money movement. The engine routes fiat → USDC/USDT → local rails.
- * The UI only ever receives fiat settlement facts (amount, rail, receipt).
+ * UI-facing money movement. On Creditcoin Testnet this submits a real transaction
+ * from the user's ZIP account. The UI still only shows fiat, $handles, and receipts.
  */
 export async function executeIntent(intent: PaymentIntent): Promise<ExecutionResult> {
   if (!Number.isFinite(intent.amountCusd) || intent.amountCusd <= 0) {
     throw new Error("Amount is required");
   }
   if (typeof window !== "undefined") {
-    try {
-      const response = await fetch("/api/payments/settle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: corridorFor(intent.kind),
-          amountUsd: Math.abs(intent.amountCusd),
-          sourceFiat: intent.sourceFiat ?? "NGN",
-          destFiat: intent.destFiat ?? intent.sourceFiat ?? "NGN",
-          counterparty: intent.counterparty,
-          memo: intent.memo,
-        }),
-      });
-      if (response.ok) {
-        const settlement = (await response.json()) as PublicSettlement;
-        return { ...settlement, sponsored: true, networkFeeUsd: 0 };
-      }
-    } catch {
-      /* fall through to local settlement */
-    }
+    const { executeOnchain } = await import("@/lib/testnet/execute");
+    return executeOnchain(intent);
   }
   return settleLocal(intent);
 }

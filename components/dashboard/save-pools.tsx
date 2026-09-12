@@ -78,6 +78,7 @@ export function SavePools({
         receiptId: result.receiptId,
         railLabel: result.railName,
         verifiedLabel: result.verifiedLabel,
+        explorerUrl: result.explorerUrl,
       });
     } finally {
       setBusy(false);

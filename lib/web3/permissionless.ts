@@ -1,11 +1,6 @@
 /**
- * ERC-4337 wiring (next slice).
- *
- * Plug permissionless.js here:
- * 1. Create a Smart Account Client against Creditcoin (chain id 102030).
- * 2. Attach a verifying paymaster so UserOperations stay "$0.00 Sponsored".
- * 3. Keep `executeIntent` in `lib/aa/smart-account.ts` as the only UI-facing API.
- *
- * The UI must keep talking in Receipt IDs, $handles, and network fees.
+ * Direct Creditcoin Testnet execution is live via `lib/testnet/execute.ts`.
+ * ERC-4337 paymaster/bundler can replace the embedded signer later without
+ * changing UI-facing `executeIntent`.
  */
-export const AA_STATUS = "simulated" as const;
+export const AA_STATUS = "testnet-direct" as const;

@@ -14,9 +14,11 @@ import { createPaymentLink } from "@/lib/ids";
 import { FIAT_CODES, FIAT_META, formatFiat, toCusd, type FiatCode } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
+import { useWalletStore } from "@/stores/wallet-store";
 
 export function ReceiveFlow() {
   const handle = useSessionStore((s) => s.handle);
+  const chainAddress = useWalletStore((s) => s.chainAddress);
   const { fiat: preferred } = useFiat();
   const [asset, setAsset] = useState<FiatCode>(preferred);
   const [seenPreferred, setSeenPreferred] = useState(preferred);
@@ -52,6 +54,7 @@ export function ReceiveFlow() {
       <div className="px-5 pb-8">
         <Card className="flex flex-col items-center p-6">
           <p className="mb-4 text-sm font-semibold">${handle}</p>
+          <p className="mb-3 text-xs font-medium text-yield">Creditcoin Testnet</p>
           <div className="rounded-3xl bg-white p-4">
             <QRCodeSVG value={link} size={196} bgColor="#ffffff" fgColor="#0E0C0A" />
           </div>
@@ -107,6 +110,9 @@ export function ReceiveFlow() {
             Copy $handle
           </Button>
         </div>
+        {chainAddress ? (
+          <p className="mt-3 text-center text-xs text-muted">Payments settle to your ZIP Network account on Creditcoin Testnet.</p>
+        ) : null}
 
         {amount ? (
           <p className="mt-4 text-center text-xs text-muted">

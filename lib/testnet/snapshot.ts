@@ -1,0 +1,77 @@
+import { getAddress, type Address } from "viem";
+import type { VaultId } from "@/lib/mock/catalog";
+import type { SwapCoinId } from "@/lib/mock/swap-assets";
+import { zipHubAbi } from "@/lib/testnet/abi";
+import { hubAddress } from "@/lib/testnet/config";
+import { POOL_KEYS, TOKEN_KEYS, poolId, tokenId } from "@/lib/testnet/ids";
+import { testnetPublicClient } from "@/lib/testnet/public";
+import { weiToCusd } from "@/lib/testnet/units";
+
+export type ChainSnapshot = {
+  address: Address;
+  live: true;
+  nativeCtc: number;
+  activeCusd: number;
+  vaults: Array<{ id: VaultId; depositedCusd: number }>;
+  tokenBalances: Record<SwapCoinId, number>;
+  registeredHandle: string;
+  hub: Address | null;
+};
+
+export async function readChainSnapshot(address: Address): Promise<ChainSnapshot> {
+  const account = getAddress(address);
+  const native = await testnetPublicClient.getBalance({ address: account });
+  const hub = hubAddress();
+  const vaults: Array<{ id: VaultId; depositedCusd: number }> = [];
+  const tokenBalances: Record<SwapCoinId, number> = { CTC: 0, USDC: 0, "g-CRE": 0, ETH: 0 };
+  let registeredHandle = "";
+
+  if (hub) {
+    const [handle, poolValues, tokenValues] = await Promise.all([
+      testnetPublicClient.readContract({
+        address: hub,
+        abi: zipHubAbi,
+        functionName: "addressToHandle",
+        args: [account],
+      }),
+      Promise.all(
+        POOL_KEYS.map((id) =>
+          testnetPublicClient.readContract({
+            address: hub,
+            abi: zipHubAbi,
+            functionName: "poolBal",
+            args: [account, poolId(id)],
+          }),
+        ),
+      ),
+      Promise.all(
+        TOKEN_KEYS.map((id) =>
+          testnetPublicClient.readContract({
+            address: hub,
+            abi: zipHubAbi,
+            functionName: "tokenBal",
+            args: [account, tokenId(id)],
+          }),
+        ),
+      ),
+    ]);
+    registeredHandle = String(handle ?? "");
+    POOL_KEYS.forEach((id, index) => {
+      vaults.push({ id, depositedCusd: weiToCusd(poolValues[index] ?? BigInt(0)) });
+    });
+    TOKEN_KEYS.forEach((id, index) => {
+      tokenBalances[id] = Number(weiToCusd(tokenValues[index] ?? BigInt(0)).toFixed(6));
+    });
+  }
+
+  return {
+    address: account,
+    live: true,
+    nativeCtc: Number(native) / 1e18,
+    activeCusd: weiToCusd(native),
+    vaults,
+    tokenBalances,
+    registeredHandle,
+    hub,
+  };
+}

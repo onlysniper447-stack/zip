@@ -1,5 +1,3 @@
-import { FX_CTC_PER_USD } from "@/lib/money";
-
 export type SwapTokenId = "cash" | "CTC" | "USDC" | "g-CRE" | "ETH";
 export type SwapCoinId = Exclude<SwapTokenId, "cash">;
 
@@ -13,7 +11,7 @@ export type SwapAsset = {
 
 export const SWAP_ASSETS: SwapAsset[] = [
   { id: "cash", ticker: "Cash", name: "ZIP Wallet", usd: 1, tag: "Spendable" },
-  { id: "CTC", ticker: "CTC", name: "Creditcoin", usd: FX_CTC_PER_USD, tag: "Native" },
+  { id: "CTC", ticker: "CTC", name: "Creditcoin", usd: 1, tag: "Native" },
   { id: "USDC", ticker: "USDC", name: "USDC", usd: 1, tag: "Stable" },
   { id: "g-CRE", ticker: "g-CRE", name: "g-CRE", usd: 1.18, tag: "Creditcoin" },
   { id: "ETH", ticker: "ETH", name: "Ether", usd: 3480, tag: "Pair" },

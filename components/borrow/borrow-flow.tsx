@@ -75,6 +75,7 @@ export function BorrowFlow() {
         receiptId: result.receiptId,
         railLabel: destination === "rail" ? result.railName : undefined,
         verifiedLabel: result.verifiedLabel,
+        explorerUrl: result.explorerUrl,
       });
     } finally {
       setBusy(false);

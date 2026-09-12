@@ -22,7 +22,7 @@ See [docs/ATTESTCOIN.md](docs/ATTESTCOIN.md) for RPC, precompiles, SDK, and the 
 ## What this slice includes
 
 - **Dashboard** with fiat-primary balances, Active vs Save toggle, and a live yield ticker
-- **Tip / Receive** by `$handle`, contact, QR, and payment link (network fee always sponsored)
+- **Tip / Receive** by `$handle`, contact, QR, and payment link (settles as real tCTC on Creditcoin Testnet)
 - **Borrow** with a Creditcoin credit gauge priced after Attestcoin verification
 - **Save** RWA vaults: Prime Lending, Sovereign Notes, Invoice Vault, Cash Float
 - **Cash out** to bank or mobile money with slide-to-confirm
@@ -45,15 +45,34 @@ Open [http://localhost:3000](http://localhost:3000). Desktop shows a phone frame
 
 Demo session starts signed in as `$ada`. Sign out from **You** to replay passkey onboarding. Switch display currency under **You**. **How ZIP is verified** on that screen opens the Attestcoin docs.
 
+## Creditcoin Testnet (live)
+
+ZIP accounts are real EVM wallets on **Creditcoin Testnet (chain 102031)**. Tip, Save, Swap, Borrow, and Cash out submit transactions to `ZipHub`.
+
+1. Fund the operator (in-app faucet + hub deploy) with tCTC from the [Creditcoin Discord faucet](https://docs.creditcoin.org/wallets/using-testnet-faucet):
+   `0x2DF8e669e32E78df4BaB5b0f5F1E061759cDC6C9`
+2. Deploy the hub:
+   ```bash
+   npm run deploy:hub
+   ```
+3. Set on Vercel / `.env.local`:
+   ```
+   ZIP_OPERATOR_PRIVATE_KEY=0x…
+   NEXT_PUBLIC_ZIP_HUB=0x…   # printed by the deploy script
+   CREDITCOIN_RPC_URL=https://rpc.cc3-testnet.creditcoin.network
+   ```
+
+Until the hub is deployed, tips still send native tCTC. Save / Swap / Borrow need the hub. Each device gets its own ZIP account; Profile → **Get testnet cash** drips from the operator.
+
 ## Deploy
 
-App is on Vercel: [https://usezipnow.vercel.app](https://usezipnow.vercel.app). Attestcoin calls hit Creditcoin CC3 Testnet from serverless routes.
-
-Optional env vars:
+App is on Vercel: [https://usezipnow.vercel.app](https://usezipnow.vercel.app).
 
 ```
 CREDITCOIN_RPC_URL=https://rpc.cc3-testnet.creditcoin.network
 ATTEST_PROVER_URL=https://prover.cc3-testnet.creditcoin.network
+ZIP_OPERATOR_PRIVATE_KEY=
+NEXT_PUBLIC_ZIP_HUB=
 XAI_API_KEY=
 ```
 

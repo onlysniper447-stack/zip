@@ -43,9 +43,23 @@ SDK: [`@gluwa/usc-sdk`](https://www.npmjs.com/package/@gluwa/usc-sdk) (`chainInf
 | `lib/payments/engine.ts` | Settlement waits on attestation |
 | `app/docs/page.tsx` | In-app judge/docs view |
 
+## Live testnet money movement
+
+ZIP now submits real Creditcoin Testnet transactions from a per-device ZIP account (or a connected wallet):
+
+| Action | On-chain |
+| --- | --- |
+| Tip / VoicePay | `ZipHub.pay` native tCTC to the $handle |
+| Save / Withdraw | `ZipHub.deposit` / `withdraw` |
+| Swap | `ZipHub.swap` |
+| Borrow | `ZipHub.borrow` |
+| Cash out | `ZipHub.cashOut` (locks tCTC, local rail still simulated) |
+
+Receipts link to Blockscout. Attestcoin readability still stamps **Cross-chain verified** from the ChainInfo precompile.
+
 ## What is not claimed
 
-ZIP does not yet submit `verifyAndEmit` transactions from a user wallet (that needs a funded testnet key). Readability against the live ChainInfo precompile **is** deployed and executed on CC3 Testnet on every settle and status poll.
+ZIP does not yet submit `verifyAndEmit` from a user wallet. Fiat NIBSS/ACH payout is still simulated after the on-chain lock. ERC-4337 paymaster sponsorship is not live; the user account pays a tiny network fee in tCTC.
 
 ## Live
 

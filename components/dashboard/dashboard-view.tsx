@@ -44,6 +44,8 @@ export function DashboardView() {
   const vaults = useWalletStore((s) => s.vaults);
   const yieldNow = useTickingYield();
   const { format } = useFiat();
+  const liveError = useWalletStore((s) => s.liveError);
+  const nativeCtc = useWalletStore((s) => s.nativeCtc);
   const vaultCusd = vaultTotal(vaults);
   const totalCusd = activeCusd + vaultCusd;
   const shown = pane === "active" ? activeCusd : vaultCusd;
@@ -54,9 +56,17 @@ export function DashboardView() {
 
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         <StateBanner tone="success" icon={<Sparkles className="size-3.5" />}>
-          Earning {(yieldNow.blendedApy * 100).toFixed(1)}% APY in background
+          Live on Creditcoin Testnet
         </StateBanner>
+        {vaultCusd > 0 ? (
+          <StateBanner tone="accent" icon={<Sparkles className="size-3.5" />}>
+            Earning {(yieldNow.blendedApy * 100).toFixed(1)}% APY in background
+          </StateBanner>
+        ) : null}
       </div>
+      {liveError ? (
+        <p className="mb-3 text-sm font-medium text-danger">{liveError}</p>
+      ) : null}
 
       <div className="mb-5 grid grid-cols-4 gap-2">
         {ACTIONS.map((action) => {
@@ -143,7 +153,9 @@ export function DashboardView() {
             <>
               <DualValue amountCusd={shown} size="md" masked={hide} />
               <p className="mt-3 text-sm font-medium text-muted">
-                Spendable now. Move idle cash into Save to keep earning on Creditcoin pools.
+                {nativeCtc < 0.02
+                  ? "Topping up testnet cash from ZIP Network. Tips, Save, and Swap settle on Creditcoin."
+                  : "Spendable now on Creditcoin Testnet. Move idle cash into Save to keep earning."}
               </p>
             </>
           )}

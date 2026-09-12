@@ -3,9 +3,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ActivityItem, VaultId } from "@/lib/mock/catalog";
-import { SEED_ACTIVITY } from "@/lib/mock/catalog";
 import { createReceiptId } from "@/lib/ids";
 import { DEFAULT_TOKEN_BALANCES, type SwapCoinId, type SwapTokenId } from "@/lib/mock/swap-assets";
+import type { ChainSnapshot } from "@/lib/testnet/snapshot";
 
 export type TokenBalances = Record<SwapCoinId, number>;
 
@@ -40,8 +40,13 @@ type WalletState = {
   activity: ActivityItem[];
   loan: LoanRecord | null;
   yieldOriginMs: number;
+  chainAddress: string | null;
+  nativeCtc: number;
+  liveError: string | null;
   boot: () => void;
   toggleHide: () => void;
+  hydrateFromChain: (snapshot: ChainSnapshot) => void;
+  setLiveError: (liveError: string | null) => void;
   applyTip: (input: {
     to: string;
     amountCusd: number;
@@ -78,38 +83,37 @@ function pushActivity(list: ActivityItem[], item: ActivityItem) {
   return [item, ...list].slice(0, 40);
 }
 
-const SEED_VAULTS: VaultPosition[] = [
-  { id: "prime", depositedCusd: 900 },
-  { id: "notes", depositedCusd: 408.33 },
-  { id: "ctc-stake", depositedCusd: 240 },
-  { id: "ctc-usdc", depositedCusd: 180 },
-  { id: "gcre-eth", depositedCusd: 96 },
-];
-
-function mergeVaults(saved?: VaultPosition[]) {
-  const list = [...(saved ?? [])];
-  for (const seed of SEED_VAULTS) {
-    if (!list.some((item) => item.id === seed.id)) list.push(seed);
-  }
-  return list;
-}
+const EMPTY_TOKENS: TokenBalances = { CTC: 0, USDC: 0, "g-CRE": 0, ETH: 0 };
 
 export const useWalletStore = create<WalletState>()(
   persist(
     (set, get) => ({
       booted: false,
       hideBalances: false,
-      activeCusd: 325,
-      vaults: SEED_VAULTS.map((item) => ({ ...item })),
-      holdings: [{ symbol: "AAPL", shares: 0.42 }],
-      tokenBalances: { ...DEFAULT_TOKEN_BALANCES },
-      activity: SEED_ACTIVITY,
+      activeCusd: 0,
+      vaults: [],
+      holdings: [],
+      tokenBalances: { ...EMPTY_TOKENS },
+      activity: [],
       loan: null,
       yieldOriginMs: Date.now(),
+      chainAddress: null,
+      nativeCtc: 0,
+      liveError: null,
       boot: () => {
         if (!get().booted) set({ booted: true, yieldOriginMs: Date.now() });
       },
       toggleHide: () => set({ hideBalances: !get().hideBalances }),
+      hydrateFromChain: (snapshot) =>
+        set({
+          chainAddress: snapshot.address,
+          nativeCtc: snapshot.nativeCtc,
+          activeCusd: snapshot.activeCusd,
+          vaults: snapshot.vaults,
+          tokenBalances: snapshot.tokenBalances,
+          liveError: null,
+        }),
+      setLiveError: (liveError) => set({ liveError }),
       applyTip: ({ to, amountCusd, memo, receiptId }) =>
         set({
           activeCusd: get().activeCusd - amountCusd,
@@ -256,13 +260,10 @@ export const useWalletStore = create<WalletState>()(
       },
     }),
     {
-      name: "zip-wallet",
+      name: "zip-wallet-cc3",
       partialize: (state) => ({
         hideBalances: state.hideBalances,
-        activeCusd: state.activeCusd,
-        vaults: state.vaults,
         holdings: state.holdings ?? [],
-        tokenBalances: state.tokenBalances ?? DEFAULT_TOKEN_BALANCES,
         activity: state.activity,
         loan: state.loan,
       }),
@@ -271,10 +272,7 @@ export const useWalletStore = create<WalletState>()(
         return {
           ...current,
           hideBalances: saved.hideBalances ?? current.hideBalances,
-          activeCusd: saved.activeCusd ?? current.activeCusd,
-          vaults: mergeVaults(saved.vaults ?? current.vaults),
           holdings: saved.holdings ?? current.holdings ?? [],
-          tokenBalances: saved.tokenBalances ?? current.tokenBalances ?? DEFAULT_TOKEN_BALANCES,
           activity: saved.activity ?? current.activity,
           loan: saved.loan === undefined ? current.loan : saved.loan,
         };

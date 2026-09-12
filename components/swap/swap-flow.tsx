@@ -96,6 +96,9 @@ export function SwapFlow() {
         sourceFiat: fiat,
         destFiat: fiat,
         counterparty: `${fromTicker} → ${toTicker}`,
+        fromToken: fromId,
+        toToken: toId,
+        units: fromId === "cash" ? payUsd : payAmount,
       });
       applySwap({
         fromId,
@@ -111,8 +114,9 @@ export function SwapFlow() {
         subtitle: `${formatSwapUnits(fromId === "cash" ? fromUsd(payUsd) : payAmount, fromId)} ${fromTicker} → ${toId === "cash" ? formatFiat(fromUsd(payUsd), fiat) : `${formatSwapUnits(receiveAmount, toId)} ${toTicker}`}`,
         amountCusd: 0,
         receiptId: result.receiptId,
-        networkFeeLabel: "Sponsored · no extra fee",
+        networkFeeLabel: "Included on ZIP Network",
         verifiedLabel: result.verifiedLabel,
+        explorerUrl: result.explorerUrl,
       });
     } finally {
       setBusy(false);

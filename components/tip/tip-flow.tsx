@@ -86,6 +86,7 @@ export function TipFlow() {
         receiptId: result.receiptId,
         railLabel: result.railName,
         verifiedLabel: result.verifiedLabel,
+        explorerUrl: result.explorerUrl,
       });
       router.push("/");
     } finally {

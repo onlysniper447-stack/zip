@@ -5,6 +5,7 @@ import { useEffect, type ReactNode } from "react";
 import { ReceiptDrawer } from "@/components/receipt/receipt-drawer";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { VoiceAIDrawer } from "@/components/voice/VoiceAIDrawer";
+import { useChainSync } from "@/hooks/use-chain-sync";
 import { useSessionStore } from "@/stores/session-store";
 import { useWalletStore } from "@/stores/wallet-store";
 
@@ -13,6 +14,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const onboarded = useSessionStore((s) => s.onboarded);
   const boot = useWalletStore((s) => s.boot);
+  useChainSync();
 
   useEffect(() => {
     boot();

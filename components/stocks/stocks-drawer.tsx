@@ -89,6 +89,7 @@ export function StocksDrawer({ open, onClose }: Props) {
         sourceFiat: fiat,
         destFiat: fiat,
         counterparty: selected.symbol,
+        side,
       });
       applyStockTrade({
         symbol: selected.symbol,
@@ -107,6 +108,7 @@ export function StocksDrawer({ open, onClose }: Props) {
         receiptId: result.receiptId,
         railLabel: result.railName,
         verifiedLabel: result.verifiedLabel,
+        explorerUrl: result.explorerUrl,
       });
     } finally {
       setBusy(false);

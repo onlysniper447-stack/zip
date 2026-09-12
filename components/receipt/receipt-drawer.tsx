@@ -40,7 +40,22 @@ export function ReceiptDrawer() {
             {receipt.memo ? <Row label="Memo" value={receipt.memo} /> : null}
             {receipt.railLabel ? <Row label="Arrives via" value={receipt.railLabel} /> : null}
             {receipt.verifiedLabel ? <Row label="Verified" value={receipt.verifiedLabel} /> : null}
-            <Row label="Network fee" value={receipt.networkFeeLabel ?? "Sponsored · no extra fee"} />
+            <Row label="Network fee" value={receipt.networkFeeLabel ?? "Included on ZIP Network"} />
+            {receipt.explorerUrl ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted">ZIP Network</dt>
+                <dd>
+                  <a
+                    href={receipt.explorerUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-primary"
+                  >
+                    View receipt
+                  </a>
+                </dd>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted">Receipt ID</dt>
               <dd className="flex items-center gap-2 font-medium">

@@ -12,6 +12,7 @@ export type ReceiptPayload = {
   networkFeeLabel?: string;
   railLabel?: string;
   verifiedLabel?: string;
+  explorerUrl?: string;
 };
 
 type UiState = {

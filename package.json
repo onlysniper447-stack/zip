@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:hub": "node scripts/deploy-zip-hub.mjs"
   },
   "dependencies": {
     "@gluwa/usc-sdk": "^0.18.0",
@@ -36,6 +37,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "solc": "^0.8.28",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
