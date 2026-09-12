@@ -1,16 +1,11 @@
 "use client";
 
-import { Bell, ShieldCheck } from "lucide-react";
+import { Bell, User } from "lucide-react";
 import Link from "next/link";
 import { ZipMark } from "@/components/brand/zip-mark";
 import { haptic } from "@/lib/haptic";
-import { initials } from "@/lib/utils";
-import { useSessionStore } from "@/stores/session-store";
 
 export function AppHeader() {
-  const displayName = useSessionStore((s) => s.displayName);
-  const score = useSessionStore((s) => s.creditScore);
-
   return (
     <header className="mb-5 flex items-center justify-between">
       <ZipMark />
@@ -18,18 +13,13 @@ export function AppHeader() {
         <Link
           href="/profile"
           onClick={() => haptic("light")}
-          className="grid size-10 place-items-center rounded-full border border-line bg-surface text-[11px] font-bold text-foreground"
-          aria-label="You"
+          className="flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-1 pr-3"
+          aria-label="Profile"
         >
-          {initials(displayName || "You")}
-        </Link>
-        <Link
-          href="/profile"
-          onClick={() => haptic("light")}
-          className="grid size-10 place-items-center rounded-full border border-line bg-surface text-yield"
-          aria-label={`Your credit, score ${score}`}
-        >
-          <ShieldCheck className="size-4" />
+          <span className="grid size-8 place-items-center rounded-full bg-primary/20 text-foreground">
+            <User className="size-4" />
+          </span>
+          <span className="text-xs font-bold text-foreground">Profile</span>
         </Link>
         <Link
           href="/activity"
