@@ -14,6 +14,8 @@ import { useWalletStore } from "@/stores/wallet-store";
 
 export function SecurityView() {
   const phone = useSessionStore((s) => s.phone);
+  const email = useSessionStore((s) => s.email);
+  const identity = { phone, email };
   const hide = useWalletStore((s) => s.hideBalances);
   const toggleHide = useWalletStore((s) => s.toggleHide);
   const address = useWalletStore((s) => s.chainAddress);
@@ -34,7 +36,7 @@ export function SecurityView() {
       setPinError("New PIN and confirmation don’t match.");
       return;
     }
-    const result = updatePin(phone, currentPin, nextPin);
+    const result = updatePin(identity, currentPin, nextPin);
     if (!result.ok) {
       setPinError(result.error ?? "Could not update PIN.");
       return;
@@ -48,7 +50,7 @@ export function SecurityView() {
 
   function revealKey() {
     setRevealError(null);
-    if (!verifyPin(phone, revealPin)) {
+    if (!verifyPin(identity, revealPin)) {
       setRevealError("PIN doesn’t match.");
       setSecret(null);
       return;

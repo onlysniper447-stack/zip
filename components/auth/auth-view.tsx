@@ -24,6 +24,7 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
+  const [loginWith, setLoginWith] = useState<"phone" | "email">("phone");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,9 +41,14 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
 
   async function login() {
     setError(null);
-    const account = findAccount({ phone, email });
+    const account =
+      loginWith === "email" ? findAccount({ email }) : findAccount({ phone });
     if (!account) {
-      setError("No ZIP account for that phone. Create one instead.");
+      setError(
+        loginWith === "email"
+          ? "No ZIP account for that email. Create one instead."
+          : "No ZIP account for that phone. Create one instead.",
+      );
       return;
     }
     if (account.pin !== pin) {
@@ -50,16 +56,16 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
       return;
     }
     setBusy(true);
-    await createPasskey(account.displayName);
-    setBusy(false);
     enter(account);
+    setBusy(false);
   }
 
   async function signupPasskey() {
     const displayName = name.trim();
     const cleanPhone = phone.trim();
-    if (!displayName || !cleanPhone || pin.length !== 6) {
-      setError("Name, phone, and a 6-digit PIN are required.");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!displayName || pin.length !== 6 || (!cleanPhone && !cleanEmail)) {
+      setError("Name, a 6-digit PIN, and phone or email are required.");
       return;
     }
     setError(null);
@@ -67,9 +73,9 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
     haptic("medium");
     await createPasskey(displayName);
     const handle = handleFromName(displayName);
-    saveAccount({ handle, displayName, phone: cleanPhone, email: email.trim(), pin });
+    saveAccount({ handle, displayName, phone: cleanPhone, email: cleanEmail, pin });
     setBusy(false);
-    enter({ handle, displayName, phone: cleanPhone, email: email.trim() });
+    enter({ handle, displayName, phone: cleanPhone, email: cleanEmail });
   }
 
   return (
@@ -141,24 +147,58 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
         {screen === "login" ? (
           <motion.div key="login" {...fadeUp} transition={springSoft} className="relative mt-10 flex flex-1 flex-col">
             <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
-            <p className="mt-2 text-sm text-muted">Log in with the phone and PIN on this device.</p>
+            <p className="mt-2 text-sm text-muted">Log in with phone or email, plus your PIN.</p>
 
             <div className="mt-8 space-y-4">
-              <Field label="Phone">
-                <Input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+234 800 000 0000"
-                />
-              </Field>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-surface p-1">
+                {(["phone", "email"] as const).map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => {
+                      setLoginWith(method);
+                      setError(null);
+                    }}
+                    className={`h-10 rounded-xl text-sm font-bold ${
+                      loginWith === method ? "bg-primary text-on-accent" : "text-muted"
+                    }`}
+                  >
+                    {method === "phone" ? "Phone" : "Email"}
+                  </button>
+                ))}
+              </div>
+              {loginWith === "phone" ? (
+                <Field label="Phone">
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+234 800 000 0000"
+                  />
+                </Field>
+              ) : (
+                <Field label="Email">
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    autoComplete="email"
+                  />
+                </Field>
+              )}
               <PinBoxes value={pin} onChange={setPin} ariaLabel="PIN" />
             </div>
 
             {error ? <p className="mt-4 text-sm font-medium text-danger">{error}</p> : null}
 
             <div className="mt-auto space-y-3 pt-8">
-              <Button className="w-full" size="lg" disabled={busy || pin.length !== 6 || !phone.trim()} onClick={() => void login()}>
+              <Button
+                className="w-full"
+                size="lg"
+                disabled={busy || pin.length !== 6 || (loginWith === "phone" ? !phone.trim() : !email.trim())}
+                onClick={() => void login()}
+              >
                 <Lock className="size-4" />
                 {busy ? "Signing in…" : "Log in"}
               </Button>
@@ -187,9 +227,10 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
                   placeholder="+234 800 000 0000"
                 />
               </Field>
-              <Field label="Email (optional)">
+              <Field label="Email">
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" />
               </Field>
+              <p className="text-xs text-muted">Use phone, email, or both. You’ll log in with either plus your PIN.</p>
               <PinBoxes value={pin} onChange={setPin} ariaLabel="Create a 6-digit PIN" />
             </div>
 
@@ -198,7 +239,7 @@ export function AuthView({ start = "welcome" }: { start?: Screen }) {
             <Button
               className="mt-auto w-full"
               size="lg"
-              disabled={!name.trim() || !phone.trim() || pin.length !== 6}
+              disabled={!name.trim() || pin.length !== 6 || (!phone.trim() && !email.trim())}
               onClick={() => {
                 setError(null);
                 setScreen("passkey");

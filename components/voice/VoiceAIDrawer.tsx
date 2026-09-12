@@ -64,27 +64,32 @@ export function VoiceAIDrawer() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [transcript, setTranscript] = useState("");
   const [intents, setIntents] = useState<ParsedIntent[]>([]);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const recognition = useRef<BrowserSpeech | null>(null);
   const spokenRef = useRef("");
 
   useEffect(() => {
-    if (!open) recognition.current?.stop();
+    if (!open) {
+      recognition.current?.stop();
+      setPhase("idle");
+      setTranscript("");
+      setIntents([]);
+      setVoiceError(null);
+    }
   }, [open]);
-
-  if (!open && phase !== "idle") {
-    setPhase("idle");
-    setTranscript("");
-    setIntents([]);
-  }
 
   async function parseText(text: string) {
     const cleaned = text.trim();
     if (!cleaned) return;
-    setPhase("parsing");
+    setVoiceError(null);
     const local = parseUtterance(cleaned, fiat);
+    setIntents(local);
+    setPhase(local.length ? "confirm" : "idle");
+    if (local.length) haptic("medium");
+    else setVoiceError("Couldn’t read that. Try “Send ₦50k to $ahmad” or tap an example.");
     try {
       const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 8000);
+      const timer = window.setTimeout(() => controller.abort(), 2500);
       const response = await fetch("/api/voice/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,21 +98,28 @@ export function VoiceAIDrawer() {
       });
       window.clearTimeout(timer);
       const data = (await response.json()) as { intents?: ParsedIntent[] };
-      const next = data.intents?.length ? data.intents : local;
-      setIntents(next);
-      setPhase(next.length ? "confirm" : "idle");
-      if (next.length) haptic("medium");
+      if (data.intents?.length) {
+        setIntents(data.intents);
+        setPhase("confirm");
+        setVoiceError(null);
+      }
     } catch {
-      setIntents(local);
-      setPhase(local.length ? "confirm" : "idle");
+      /* local parse already shown */
     }
   }
 
   function listen() {
     haptic("medium");
-    const rec = getRecognizer(fiat === "NGN" ? "en-NG" : fiat === "GBP" ? "en-GB" : fiat === "EUR" ? "en-IE" : "en-US");
+    setVoiceError(null);
+    const langs =
+      fiat === "NGN" ? ["en-US", "en-NG", "en-GB"] : fiat === "GBP" ? ["en-GB", "en-US"] : ["en-US"];
+    let rec: BrowserSpeech | null = null;
+    for (const lang of langs) {
+      rec = getRecognizer(lang);
+      if (rec) break;
+    }
     if (!rec) {
-      setPhase("idle");
+      setVoiceError("This browser can’t listen. Type the command or tap an example.");
       return;
     }
     recognition.current = rec;
@@ -119,15 +131,28 @@ export function VoiceAIDrawer() {
       setTranscript(spoken);
     };
     rec.onend = () => {
-      void parseText(spokenRef.current);
+      if (spokenRef.current.trim()) void parseText(spokenRef.current);
+      else setPhase("idle");
     };
-    rec.onerror = () => setPhase("idle");
-    rec.start();
+    rec.onerror = () => {
+      if (spokenRef.current.trim()) void parseText(spokenRef.current);
+      else {
+        setPhase("idle");
+        setVoiceError("Couldn’t hear that. Allow the mic, or type the command.");
+      }
+    };
+    try {
+      rec.start();
+    } catch {
+      setPhase("idle");
+      setVoiceError("Couldn’t start the mic. Type the command instead.");
+    }
   }
 
   async function executeAll() {
     const totalUsd = intents.reduce((sum, item) => sum + intentUsd(item), 0);
     if (!intents.length || totalUsd > activeCusd) return;
+    setVoiceError(null);
     setPhase("executing");
     haptic("medium");
     let lastReceipt = "";
@@ -203,8 +228,9 @@ export function VoiceAIDrawer() {
         verifiedLabel: lastReceipt ? "Cross-chain verified" : undefined,
         explorerUrl: lastExplorer,
       });
-    } catch {
+    } catch (error) {
       setPhase("confirm");
+      setVoiceError(error instanceof Error ? error.message : "Couldn’t send. Try Confirm & Send again.");
     }
   }
 
@@ -292,7 +318,9 @@ export function VoiceAIDrawer() {
           Read command
         </Button>
 
-        {parseFailed ? (
+        {voiceError ? (
+          <p className="text-center text-sm font-medium text-danger">{voiceError}</p>
+        ) : parseFailed ? (
           <p className="text-center text-sm font-medium text-danger">
             Couldn’t find who to pay. Try “Send ₦50k to $ahmad”.
           </p>

@@ -28,8 +28,23 @@ function friendlyError(error: unknown) {
   return "Couldn’t complete that on ZIP Network. Try again.";
 }
 
+const DEFAULT_GAS_PRICE = BigInt(500_000_000);
+
+async function feeOverrides() {
+  try {
+    const gasPrice = await testnetPublicClient.getGasPrice();
+    return { gasPrice: gasPrice > BigInt(0) ? gasPrice : DEFAULT_GAS_PRICE };
+  } catch {
+    return { gasPrice: DEFAULT_GAS_PRICE };
+  }
+}
+
 async function wait(hash: Hash): Promise<Hash> {
-  const receipt = await testnetPublicClient.waitForTransactionReceipt({ hash, timeout: 120_000 });
+  const receipt = await testnetPublicClient.waitForTransactionReceipt({
+    hash,
+    timeout: 90_000,
+    pollingInterval: 2_500,
+  });
   if (receipt.status === "reverted") throw new Error("ZIP Network could not complete this.");
   return hash;
 }
@@ -40,7 +55,7 @@ async function attestedResult(hash: Hash, fiat = "NGN"): Promise<ExecutionResult
   let attestedHeight: number | null = null;
   let sourceChain: string | undefined;
   try {
-    const response = await fetch("/api/attest/status");
+    const response = await fetch("/api/attest/status", { signal: AbortSignal.timeout(2500) });
     const data = (await response.json()) as {
       live?: boolean;
       attestedHeight?: number | null;
@@ -117,6 +132,8 @@ export async function registerHandle(handle: string) {
     args: [clean],
     chain: client.chain,
     account: client.account ?? address,
+    gas: BigInt(120_000),
+    ...(await feeOverrides()),
   });
   return wait(hash);
 }
@@ -126,7 +143,7 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
   const value = cusdToWei(intent.amountCusd);
   if (value <= BigInt(0)) throw new Error("Amount is required");
   const { address, client } = await getWalletClient();
-  const balance = await testnetPublicClient.getBalance({ address });
+  const [balance, fees] = await Promise.all([testnetPublicClient.getBalance({ address }), feeOverrides()]);
   const account = client.account ?? address;
 
   try {
@@ -141,6 +158,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         chain: client.chain,
         to,
         value,
+        gas: BigInt(21_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }
@@ -156,6 +175,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         value,
         chain: client.chain,
         account,
+        gas: BigInt(140_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }
@@ -170,6 +191,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         value,
         chain: client.chain,
         account,
+        gas: BigInt(120_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }
@@ -182,6 +205,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         args: [poolId(intent.counterparty ?? "prime"), value],
         chain: client.chain,
         account,
+        gas: BigInt(120_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }
@@ -202,6 +227,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         value: fromCash ? amountIn : BigInt(0),
         chain: client.chain,
         account,
+        gas: BigInt(160_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }
@@ -214,6 +241,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         args: [value],
         chain: client.chain,
         account,
+        gas: BigInt(140_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }
@@ -228,6 +257,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         value,
         chain: client.chain,
         account,
+        gas: BigInt(100_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }
@@ -243,6 +274,8 @@ export async function executeOnchain(intent: PaymentIntent): Promise<ExecutionRe
         value: buying ? value : BigInt(0),
         chain: client.chain,
         account,
+        gas: BigInt(140_000),
+        ...fees,
       });
       return attestedResult(await wait(hash), intent.destFiat ?? intent.sourceFiat);
     }

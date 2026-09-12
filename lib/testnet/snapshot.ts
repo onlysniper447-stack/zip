@@ -27,40 +27,49 @@ export async function readChainSnapshot(address: Address): Promise<ChainSnapshot
   let registeredHandle = "";
 
   if (hub) {
-    const [handle, poolValues, tokenValues] = await Promise.all([
+    const handleResult = await Promise.allSettled([
       testnetPublicClient.readContract({
         address: hub,
         abi: zipHubAbi,
         functionName: "addressToHandle",
         args: [account],
       }),
-      Promise.all(
-        POOL_KEYS.map((id) =>
-          testnetPublicClient.readContract({
-            address: hub,
-            abi: zipHubAbi,
-            functionName: "poolBal",
-            args: [account, poolId(id)],
-          }),
-        ),
-      ),
-      Promise.all(
-        TOKEN_KEYS.map((id) =>
-          testnetPublicClient.readContract({
-            address: hub,
-            abi: zipHubAbi,
-            functionName: "tokenBal",
-            args: [account, tokenId(id)],
-          }),
-        ),
-      ),
     ]);
-    registeredHandle = String(handle ?? "");
+    if (handleResult[0].status === "fulfilled") registeredHandle = String(handleResult[0].value ?? "");
+
+    const poolResults = await Promise.allSettled(
+      POOL_KEYS.map((id) =>
+        testnetPublicClient.readContract({
+          address: hub,
+          abi: zipHubAbi,
+          functionName: "poolBal",
+          args: [account, poolId(id)],
+        }),
+      ),
+    );
     POOL_KEYS.forEach((id, index) => {
-      vaults.push({ id, depositedCusd: weiToCusd(poolValues[index] ?? BigInt(0)) });
+      const row = poolResults[index];
+      vaults.push({
+        id,
+        depositedCusd: weiToCusd(row.status === "fulfilled" ? row.value : BigInt(0)),
+      });
     });
+
+    const tokenResults = await Promise.allSettled(
+      TOKEN_KEYS.map((id) =>
+        testnetPublicClient.readContract({
+          address: hub,
+          abi: zipHubAbi,
+          functionName: "tokenBal",
+          args: [account, tokenId(id)],
+        }),
+      ),
+    );
     TOKEN_KEYS.forEach((id, index) => {
-      tokenBalances[id] = Number(weiToCusd(tokenValues[index] ?? BigInt(0)).toFixed(6));
+      const row = tokenResults[index];
+      tokenBalances[id] = Number(
+        weiToCusd(row.status === "fulfilled" ? row.value : BigInt(0)).toFixed(6),
+      );
     });
   }
 

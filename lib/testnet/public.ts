@@ -6,9 +6,9 @@ export const testnetPublicClient = createPublicClient({
   transport: fallback(
     TESTNET_RPCS.map((url) =>
       http(url, {
-        timeout: 20_000,
-        retryCount: 2,
-        retryDelay: 800,
+        timeout: 10_000,
+        retryCount: 1,
+        retryDelay: 400,
       }),
     ),
     { retryCount: 1 },

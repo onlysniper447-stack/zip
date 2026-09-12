@@ -49,19 +49,14 @@ export function useChainSync() {
         const address = await getActiveAddress();
         let snapshot = await loadSnapshot(address);
         if (full && snapshot.nativeCtc < 0.05) {
-          const drop = await faucet(address);
-          if (drop.hash) {
-            await new Promise((resolve) => window.setTimeout(resolve, 4000));
-            snapshot = await loadSnapshot(address);
-          }
+          void faucet(address).then((drop) => {
+            if (drop.hash) window.setTimeout(() => window.dispatchEvent(new Event("zip-chain-refresh")), 3500);
+          });
         }
         if (full && snapshot.hub && handle && snapshot.registeredHandle !== handle && snapshot.nativeCtc >= 0.01) {
-          try {
-            await registerHandle(handle);
-            snapshot = await loadSnapshot(address);
-          } catch {
+          void registerHandle(handle).catch(() => {
             /* register can wait until there is gas */
-          }
+          });
         }
         if (!cancelled) {
           hydrate(snapshot);
@@ -75,7 +70,7 @@ export function useChainSync() {
     void sync(true);
     const onRefresh = () => void sync(false);
     window.addEventListener("zip-chain-refresh", onRefresh);
-    const timer = window.setInterval(() => void sync(false), 20_000);
+    const timer = window.setInterval(() => void sync(false), 45_000);
     return () => {
       cancelled = true;
       window.removeEventListener("zip-chain-refresh", onRefresh);

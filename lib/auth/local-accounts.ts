@@ -34,10 +34,13 @@ export function handleFromName(name: string) {
 
 export function saveAccount(account: ZipAccount) {
   const phone = normalizePhone(account.phone);
-  const list = readAll().filter(
-    (item) => normalizePhone(item.phone) !== phone && item.email.toLowerCase() !== account.email.toLowerCase(),
-  );
-  list.unshift({ ...account, phone });
+  const email = account.email.trim().toLowerCase();
+  const list = readAll().filter((item) => {
+    const samePhone = Boolean(phone) && normalizePhone(item.phone) === phone;
+    const sameEmail = Boolean(email) && item.email.trim().toLowerCase() === email;
+    return !samePhone && !sameEmail;
+  });
+  list.unshift({ ...account, phone, email });
   writeAll(list);
 }
 
@@ -51,8 +54,8 @@ export function findAccount(input: { phone?: string; email?: string }) {
   );
 }
 
-export function updatePin(phone: string, current: string, next: string) {
-  const account = findAccount({ phone });
+export function updatePin(identity: { phone?: string; email?: string }, current: string, next: string) {
+  const account = findAccount(identity);
   if (!account) return { ok: false as const, error: "No ZIP account on this device." };
   if (account.pin !== current) return { ok: false as const, error: "Current PIN doesn’t match." };
   if (!/^\d{6}$/.test(next)) return { ok: false as const, error: "New PIN must be 6 digits." };
@@ -60,8 +63,8 @@ export function updatePin(phone: string, current: string, next: string) {
   return { ok: true as const };
 }
 
-export function verifyPin(phone: string, pin: string) {
-  const account = findAccount({ phone });
+export function verifyPin(identity: { phone?: string; email?: string }, pin: string) {
+  const account = findAccount(identity);
   if (!account) return false;
   return account.pin === pin;
 }
