@@ -7,6 +7,7 @@ import { zipHubAbi } from "@/lib/testnet/abi";
 import { explorerTx, hubAddress } from "@/lib/testnet/config";
 import { fallbackHandleAddress, normalizeHandle } from "@/lib/testnet/handles";
 import { poolId, stockId, tokenId } from "@/lib/testnet/ids";
+import { networkUserMessage } from "@/lib/testnet/errors";
 import { testnetPublicClient } from "@/lib/testnet/public";
 import { cusdToWei, GAS_RESERVE_WEI } from "@/lib/testnet/units";
 import { getWalletClient } from "@/lib/testnet/wallet";
@@ -16,12 +17,15 @@ function friendlyError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   if (/user rejected|denied|rejected the request/i.test(message)) return "Cancelled.";
   if (/insufficient funds|exceeds balance/i.test(message)) {
-    return "Not enough testnet cash (leave a little for the network fee).";
+    return "Not enough testnet cash. Open Settings and tap Get testnet cash.";
   }
   if (/liq|cap|amt/i.test(message)) return "ZIP Network does not have enough liquidity for this yet.";
   if (/who|handle/i.test(message)) return "Couldn’t find who to pay.";
   if (/taken/i.test(message)) return "That $handle is already claimed on ZIP Network.";
-  return message.replace(/0x[a-fA-F0-9]{40,}/g, "ZIP Network").slice(0, 160);
+  if (/timeout|took too long|timed out|failed to fetch|network/i.test(message)) {
+    return networkUserMessage(error);
+  }
+  return "Couldn’t complete that on ZIP Network. Try again.";
 }
 
 async function wait(hash: Hash): Promise<Hash> {

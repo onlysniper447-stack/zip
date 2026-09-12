@@ -6,6 +6,11 @@ export const TESTNET_CHAIN = creditcoinTestnet;
 export const TESTNET_CHAIN_ID = creditcoinTestnet.id;
 export const TESTNET_RPC =
   process.env.NEXT_PUBLIC_CREDITCOIN_RPC ?? process.env.CREDITCOIN_RPC_URL ?? CREDITCOIN_TESTNET_RPC;
+export const TESTNET_RPCS = [
+  TESTNET_RPC,
+  CREDITCOIN_TESTNET_RPC,
+  "https://102031.rpc.thirdweb.com",
+].filter((item, index, list) => item && list.indexOf(item) === index);
 export const TESTNET_EXPLORER = CREDITCOIN_EXPLORER;
 export const TESTNET_FAUCET_DOCS = "https://docs.creditcoin.org/wallets/using-testnet-faucet";
 

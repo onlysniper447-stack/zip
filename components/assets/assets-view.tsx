@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, PieChart, TrendingUp } from "lucide-react";
+import { ArrowLeftRight, Settings, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { EmbeddedWallet } from "@/components/assets/embedded-wallet";
@@ -39,11 +39,11 @@ export function AssetsView() {
       <header className="sticky top-0 z-10 bg-background/90 px-5 py-4 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <span className="grid size-10 place-items-center rounded-full bg-primary/15 text-primary">
-            <PieChart className="size-5" />
+            <Settings className="size-5" />
           </span>
           <div>
-            <h1 className="text-lg font-semibold leading-none">Assets</h1>
-            <p className="mt-1 text-xs text-muted">Wallet, vaults, and holdings</p>
+            <h1 className="text-lg font-semibold leading-none">Settings</h1>
+            <p className="mt-1 text-xs text-muted">ZIP Wallet, vaults, and holdings</p>
           </div>
         </div>
       </header>

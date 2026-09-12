@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeftRight, Home, Mic, PieChart, Wallet } from "lucide-react";
+import { ArrowLeftRight, Home, Mic, Settings, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { haptic } from "@/lib/haptic";
@@ -13,7 +13,7 @@ const ITEMS = [
   { href: "/swap", label: "Swap", icon: ArrowLeftRight },
   { href: "__voice__", label: "Voice", icon: Mic },
   { href: "/off-ramp", label: "Cash out", icon: Wallet },
-  { href: "/assets", label: "Assets", icon: PieChart },
+  { href: "/assets", label: "Settings", icon: Settings },
 ] as const;
 
 export function BottomNav() {

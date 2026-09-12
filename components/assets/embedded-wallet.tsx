@@ -75,7 +75,7 @@ export function EmbeddedWallet() {
         </div>
       </div>
 
-      {liveError ? <p className="mt-3 text-sm font-medium text-danger">{liveError}</p> : null}
+      {liveError ? <p className="mt-3 text-xs font-medium text-muted">{liveError}</p> : null}
       {note ? <p className="mt-3 text-sm font-medium text-yield">{note}</p> : null}
 
       <Button className="mt-4 w-full" disabled={busy || !address} onClick={() => void topUp()}>

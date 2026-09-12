@@ -65,7 +65,9 @@ export function DashboardView() {
         ) : null}
       </div>
       {liveError ? (
-        <p className="mb-3 text-sm font-medium text-danger">{liveError}</p>
+        <p className="mb-3 rounded-[16px] border border-line bg-surface px-3 py-2 text-xs font-medium text-muted">
+          {liveError}
+        </p>
       ) : null}
 
       <div className="mb-5 grid grid-cols-4 gap-2">

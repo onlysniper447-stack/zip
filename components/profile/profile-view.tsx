@@ -73,7 +73,7 @@ export function ProfileView() {
           <Row label="Linked account" value={linked ? accountLabel(linked) : "—"} />
           <Row label="Payout rail" value={`${meta.railName} · ${meta.eta}`} />
           <Row label="Display currency" value={meta.label} />
-          <Row label="Wallet" value="Built in on Assets" />
+          <Row label="Wallet" value="Built in on Settings" />
         </Card>
 
         <Link href="/docs" className="mt-4 block text-center text-sm font-bold text-primary">

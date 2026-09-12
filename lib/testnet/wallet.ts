@@ -1,8 +1,8 @@
 "use client";
 
-import { createWalletClient, http, type Account, type Address, type WalletClient } from "viem";
+import { createWalletClient, fallback, http, type Account, type Address, type WalletClient } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { TESTNET_CHAIN, TESTNET_RPC } from "@/lib/testnet/config";
+import { TESTNET_CHAIN, TESTNET_RPCS } from "@/lib/testnet/config";
 import { testnetPublicClient } from "@/lib/testnet/public";
 
 export { testnetPublicClient };
@@ -32,7 +32,10 @@ export async function getWalletClient(): Promise<{ address: Address; client: Wal
   const client = createWalletClient({
     account,
     chain: TESTNET_CHAIN,
-    transport: http(TESTNET_RPC),
+    transport: fallback(
+      TESTNET_RPCS.map((url) => http(url, { timeout: 30_000, retryCount: 2 })),
+      { retryCount: 1 },
+    ),
   });
   return { address: account.address, client };
 }

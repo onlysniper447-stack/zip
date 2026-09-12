@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { networkUserMessage } from "@/lib/testnet/errors";
 import { registerHandle } from "@/lib/testnet/execute";
-import { readChainSnapshot } from "@/lib/testnet/snapshot";
+import type { ChainSnapshot } from "@/lib/testnet/snapshot";
 import { getActiveAddress } from "@/lib/testnet/wallet";
 import { useSessionStore } from "@/stores/session-store";
 import { useWalletStore } from "@/stores/wallet-store";
@@ -16,8 +17,15 @@ async function faucet(address: string) {
     });
     return (await response.json()) as { ok?: boolean; hash?: string; error?: string };
   } catch {
-    return { error: "Faucet unreachable" };
+    return { error: "ZIP Network is busy. We’ll keep trying in the background." };
   }
+}
+
+async function loadSnapshot(address: string): Promise<ChainSnapshot> {
+  const response = await fetch(`/api/testnet/snapshot?address=${address}`, { cache: "no-store" });
+  const data = (await response.json()) as ChainSnapshot & { error?: string };
+  if (!response.ok) throw new Error(data.error ?? "ZIP Network is busy. We’ll keep trying in the background.");
+  return data;
 }
 
 export function useChainSync() {
@@ -34,32 +42,28 @@ export function useChainSync() {
     async function sync(full = false) {
       try {
         const address = await getActiveAddress();
-        let snapshot = await readChainSnapshot(address);
+        let snapshot = await loadSnapshot(address);
         if (full && snapshot.nativeCtc < 0.05) {
           const drop = await faucet(address);
           if (drop.hash) {
             await new Promise((resolve) => window.setTimeout(resolve, 4000));
-            snapshot = await readChainSnapshot(address);
-          } else if (drop.error) {
-            setLiveError(drop.error);
+            snapshot = await loadSnapshot(address);
           }
         }
         if (full && snapshot.hub && handle && snapshot.registeredHandle !== handle && snapshot.nativeCtc >= 0.01) {
           try {
             await registerHandle(handle);
-            snapshot = await readChainSnapshot(address);
+            snapshot = await loadSnapshot(address);
           } catch {
             /* register can wait until there is gas */
           }
         }
         if (!cancelled) {
           hydrate(snapshot);
-          if (snapshot.nativeCtc >= 0.02) setLiveError(null);
+          setLiveError(null);
         }
       } catch (error) {
-        if (!cancelled) {
-          setLiveError(error instanceof Error ? error.message : "Could not reach Creditcoin Testnet");
-        }
+        if (!cancelled) setLiveError(networkUserMessage(error));
       }
     }
 
